@@ -49,6 +49,29 @@ exit_handler_intel_x64_eapis::advance_and_resume()
     eapis_vmcs()->resume();
 }
 
+
+
+
+
+
+
+
+
+
+
+
+#include <intrinsics/rdtsc_x64.h>
+
+
+
+
+
+
+
+
+
+
+
 void
 exit_handler_intel_x64_eapis::handle_exit(vmcs::value_type reason)
 {
@@ -61,6 +84,31 @@ exit_handler_intel_x64_eapis::handle_exit(vmcs::value_type reason)
         case exit_reason::basic_exit_reason::io_instruction:
             handle_exit__io_instruction();
             break;
+
+
+
+
+
+
+
+
+
+
+        case exit_reason::basic_exit_reason::vmx_preemption_timer_expired:
+            std::cout << view_as_pointer(x64::rdtsc::get()) << '\n';
+            this->resume();
+            break;
+
+
+
+
+
+
+
+
+
+
+
 
         default:
             exit_handler_intel_x64::handle_exit(reason);

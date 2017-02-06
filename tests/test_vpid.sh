@@ -20,16 +20,67 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-echo "----------------------------------------"
-echo "without vpid"
-ARGS="--cpuid 0 string json '{\"set\":\"vpid\", \"enabled\": false}'" make vmcall > /dev/null
-time lspci > /dev/null
-echo ""
+# ------------------------------------------------------------------------------
+# Colors
+# ------------------------------------------------------------------------------
 
-echo "----------------------------------------"
-echo "with vpid"
-ARGS="--cpuid 0 string json '{\"set\":\"vpid\", \"enabled\": true}'" make vmcall > /dev/null
-time lspci > /dev/null
-echo ""
+CB='\033[1;35m'
+CC='\033[1;36m'
+CG='\033[1;32m'
+CE='\033[0m'
 
-ARGS="--cpuid 0 string json '{\"set\":\"vpid\", \"enabled\": false}'" make vmcall > /dev/null
+# ------------------------------------------------------------------------------
+# Environment
+# ------------------------------------------------------------------------------
+
+NUM_CORES=`grep -c ^processor /proc/cpuinfo`
+
+# ------------------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------------------
+
+header() {
+    echo "----------------------------------------"
+    echo $1
+}
+
+footer() {
+    echo ""
+}
+
+run_on_all_cores() {
+    for (( core=0; core<$NUM_CORES; core++ ))
+    do
+        if [[ $2 == "true" ]]; then
+            echo -e "$CC""core:$CB #$core$CE"
+            ARGS="--cpuid $core string json $1" make vmcall
+            echo -e ""
+        else
+            ARGS="--cpuid $core string json $1" make vmcall > /dev/null
+        fi
+    done
+}
+
+# ------------------------------------------------------------------------------
+# Init
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# Tests
+# ------------------------------------------------------------------------------
+
+header "without vpid"
+run_on_all_cores "'{\"set\":\"vpid\", \"enabled\": false}'"
+time lspci > /dev/null
+footer
+
+header "with vpid"
+run_on_all_cores "'{\"set\":\"vpid\", \"enabled\": true}'"
+time lspci > /dev/null
+footer
+
+# ------------------------------------------------------------------------------
+# Fini
+# ------------------------------------------------------------------------------
+
+run_on_all_cores "'{\"set\":\"vpid\", \"enabled\": false}'"

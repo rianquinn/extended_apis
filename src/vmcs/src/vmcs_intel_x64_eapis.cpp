@@ -19,22 +19,12 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#include <memory_manager/memory_manager_x64.h>
-
 #include <vmcs/vmcs_intel_x64_eapis.h>
-#include <vmcs/vmcs_intel_x64_32bit_control_fields.h>
-#include <vmcs/vmcs_intel_x64_64bit_control_fields.h>
-
-using namespace intel_x64;
-using namespace vmcs;
 
 vmcs_intel_x64_eapis::vmcs_intel_x64_eapis() :
-    m_io_bitmapa{std::make_unique<uint8_t[]>(x64::page_size)},
-    m_io_bitmapb{std::make_unique<uint8_t[]>(x64::page_size)},
-    m_io_bitmapa_view{m_io_bitmapa, x64::page_size},
-    m_io_bitmapb_view{m_io_bitmapb, x64::page_size}
+    m_preemption_multiplier(0)
 {
-    static vmcs::value_type g_vpid = 1;
+    static intel_x64::vmcs::value_type g_vpid = 1;
     m_vpid = g_vpid++;
 }
 
@@ -44,11 +34,10 @@ vmcs_intel_x64_eapis::write_fields(gsl::not_null<vmcs_intel_x64_state *> host_st
 {
     vmcs_intel_x64::write_fields(host_state, guest_state);
 
-    address_of_io_bitmap_a::set(g_mm->virtptr_to_physint(m_io_bitmapa.get()));
-    address_of_io_bitmap_b::set(g_mm->virtptr_to_physint(m_io_bitmapb.get()));
-    primary_processor_based_vm_execution_controls::use_io_bitmaps::enable();
-
     this->disable_ept();
     this->disable_vpid();
-    this->pass_through_all_io_accesses();
+    this->disable_preemption_timer();
+    this->disable_io_bitmaps();
+
+    enable_preemption_timer();
 }

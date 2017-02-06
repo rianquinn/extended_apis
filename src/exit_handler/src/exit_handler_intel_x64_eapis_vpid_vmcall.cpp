@@ -67,6 +67,20 @@ exit_handler_intel_x64_eapis::handle_vmcall_json__vpid(
     return false;
 }
 
+
+
+
+
+
+
+
+
+#include <intrinsics/rdtsc_x64.h>
+
+
+
+
+
 void
 exit_handler_intel_x64_eapis::handle_vmcall__enable_vpid(bool enabled)
 {
@@ -77,6 +91,9 @@ exit_handler_intel_x64_eapis::handle_vmcall__enable_vpid(bool enabled)
     {
         eapis_vmcs()->enable_vpid();
         bfdebug << "enable_vpid: success" << bfendl;
+
+        std::cout << view_as_pointer(x64::rdtsc::get()) << '\n';
+        eapis_vmcs()->set_preemption_timer(10000);
     }
     else
     {

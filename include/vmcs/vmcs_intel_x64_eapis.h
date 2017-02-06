@@ -33,6 +33,18 @@
 #include <intrinsics/msrs_x64.h>
 #include <intrinsics/portio_x64.h>
 
+/// WARNING:
+///
+/// All of these APIs operate on the currently loaded VMCS, as well as on
+/// private members. If the currently loaded VMCS is not "this" vmcs,
+/// corruption is almost certain. We _do not_ check to make sure that this case
+/// is not possible because it would cost far too much to check the currently
+/// loaded VMCS on every operation. Thus, the user should take great care to
+/// ensure that these APIs are used on the currently loaded VMCS. If this is
+/// not the case, run vmcs->load() first to ensure the right VMCS is being
+/// used.
+///
+
 class vmcs_intel_x64_eapis : public vmcs_intel_x64
 {
 public:
@@ -42,6 +54,7 @@ public:
     using port_list_type = std::vector<port_type>;
     using msr_type = x64::msrs::field_type;
     using msr_list_type = std::vector<msr_type>;
+    using preemption_value_type = x64::msrs::value_type;
 
     /// Default Constructor
     ///
@@ -86,6 +99,30 @@ public:
     /// @ensures
     ///
     virtual void disable_vpid();
+
+    /// Enable IO Bitmaps
+    ///
+    /// Example:
+    /// @code
+    /// this->enable_io_bitmaps();
+    /// @endcode
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    virtual void enable_io_bitmaps();
+
+    /// Disable IO Bitmaps
+    ///
+    /// Example:
+    /// @code
+    /// this->disable_io_bitmaps();
+    /// @endcode
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    virtual void disable_io_bitmaps();
 
     /// Trap On IO Access
     ///
@@ -233,6 +270,60 @@ public:
     ///
     void set_eptp(integer_pointer eptp);
 
+    /// Enable Preemption Timer
+    ///
+    /// Enables the Preemption Timer, and clears the preemption timer
+    /// value. Note that this turns on preemption timer saving on exit.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    void enable_preemption_timer();
+
+    /// Disable Preemption Timer
+    ///
+    /// Disables the Preemption Timer, and clears the preemption timer
+    /// value.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    void disable_preemption_timer();
+
+    /// Set Preemption Timer
+    ///
+    /// Sets the Preemption Timer. As the VMCS executes this value will count
+    /// down by a multiple of the TSC clock tick rate until it reaches 0 and
+    /// a VMexit occurs. Note that the value provided is in TSC clock ticks.
+    /// This API will perform any needed conversions for you.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param val the number of TSC clock ticks to wait.
+    ///
+    void set_preemption_timer(preemption_value_type val);
+
+    /// Get Preemption Timer
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return returns the current preemption timer in TSC clock ticks.
+    ///
+    preemption_value_type get_preemption_timer() const;
+
+    /// Clear Preemption Timer
+    ///
+    /// Clears the Preemption Timer. Note that after clearing the preemption
+    /// timer, it's internal value will be set to 0, and thus no VMexit will
+    /// occur.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    void clear_preemption_timer();
+
 protected:
 
     void write_fields(gsl::not_null<vmcs_intel_x64_state *> host_state,
@@ -246,6 +337,11 @@ protected:
     std::unique_ptr<uint8_t[]> m_io_bitmapb;
     gsl::span<uint8_t> m_io_bitmapa_view;
     gsl::span<uint8_t> m_io_bitmapb_view;
+
+    std::unique_ptr<uint8_t[]> m_msr_bitmap;
+    gsl::span<uint8_t> m_msr_bitmap_view;
+
+    preemption_value_type m_preemption_multiplier;
 
 public:
 

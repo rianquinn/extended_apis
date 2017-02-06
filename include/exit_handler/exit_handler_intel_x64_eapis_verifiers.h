@@ -90,6 +90,7 @@ constexpr const auto index_clear_denials                       = 0x0000001UL;
 constexpr const auto index_dump_policy                         = 0x0000002UL;
 constexpr const auto index_dump_denials                        = 0x0000003UL;
 
+constexpr const auto index_enable_io_bitmaps                   = 0x0001001UL;
 constexpr const auto index_trap_on_io_access                   = 0x0001001UL;
 constexpr const auto index_trap_on_all_io_accesses             = 0x0001002UL;
 constexpr const auto index_pass_through_io_access              = 0x0001003UL;

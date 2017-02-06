@@ -31,6 +31,7 @@ exit_handler_intel_x64_eapis::init_policy()
     m_verifiers[vp::index_dump_policy] = std::make_unique<default_verifier__dump_policy>();
     m_verifiers[vp::index_dump_denials] = std::make_unique<default_verifier__dump_denials>();
 
+    m_verifiers[vp::index_enable_io_bitmaps] = std::make_unique<default_verifier__enable_io_bitmaps>();
     m_verifiers[vp::index_trap_on_io_access] = std::make_unique<default_verifier__trap_on_io_access>();
     m_verifiers[vp::index_trap_on_all_io_accesses] = std::make_unique<default_verifier__trap_on_all_io_accesses>();
     m_verifiers[vp::index_pass_through_io_access] = std::make_unique<default_verifier__pass_through_io_access>();

@@ -43,10 +43,12 @@ enum eapis_vmcall_categories
  */
 enum eapis_vmcall_functions
 {
-    eapis_fun__trap_on_io_access = 0x1,
-    eapis_fun__trap_on_all_io_accesses = 0x2,
-    eapis_fun__pass_through_io_access = 0x3,
-    eapis_fun__pass_through_all_io_accesses = 0x4,
+    eapis_fun__enable_io_bitmaps = 0x1,
+    eapis_fun__disable_io_bitmaps = 0x2,
+    eapis_fun__trap_on_io_access = 0x3,
+    eapis_fun__trap_on_all_io_accesses = 0x4,
+    eapis_fun__pass_through_io_access = 0x5,
+    eapis_fun__pass_through_all_io_accesses = 0x6,
 
     eapis_fun__enable_vpid = 0x1,
     eapis_fun__disable_vpid = 0x2,
@@ -79,6 +81,16 @@ enum eapis_vmcall_functions
  *
  * @subsection io_instruction_register Register Based VMCalls
  *
+ * <b>enable_io_bitmaps</b>:
+ * Instructs the hypervisor to enable IO bitmaps
+ * - r02 = eapis_cat__io_instruction
+ * - r03 = eapis_fun__enable_io_bitmaps
+ *
+ * <b>disable_io_bitmaps</b>:
+ * Instructs the hypervisor to disable IO bitmaps
+ * - r02 = eapis_cat__io_instruction
+ * - r03 = eapis_fun__disable_io_bitmaps
+ *
  * <b>trap_on_io_access</b>:
  * Instructs the hypervisor to trap on the provided port
  * - r02 = eapis_cat__io_instruction
@@ -102,6 +114,9 @@ enum eapis_vmcall_functions
  * - r03 = eapis_fun__pass_through_all_io_accesses
  *
  * @subsection io_instruction_json JSON Based VMCalls
+ *
+ * <b>{"set":"io_bitmaps", "enabled": true/false}</b>:
+ * Instructs the hypervisor to enable/disable IO bitmaps
  *
  * <b>{"set":"trap_on_io_access", "port": dec}</b>:
  * <b>{"set":"trap_on_io_access", "port_hex": "hex"}</b>:

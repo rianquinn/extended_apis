@@ -203,6 +203,7 @@ private:
 
 private:
 
+    void handle_vmcall__enable_io_bitmaps(bool enabled);
     void handle_vmcall__trap_on_io_access(port_type port);
     void handle_vmcall__trap_on_all_io_accesses();
     void handle_vmcall__pass_through_io_access(port_type port);

@@ -37,6 +37,14 @@ exit_handler_intel_x64_eapis::handle_vmcall_registers__io_instruction(
 {
     switch (regs.r03)
     {
+        case eapis_fun__enable_io_bitmaps:
+            handle_vmcall__enable_io_bitmaps(true);
+            break;
+
+        case eapis_fun__disable_io_bitmaps:
+            handle_vmcall__enable_io_bitmaps(false);
+            break;
+
         case eapis_fun__trap_on_io_access:
             handle_vmcall__trap_on_io_access(gsl::narrow_cast<port_type>(regs.r04));
             break;
@@ -66,6 +74,13 @@ exit_handler_intel_x64_eapis::handle_vmcall_json__io_instruction(
 
     if (!set.empty())
     {
+        if (set == "io_bitmaps")
+        {
+            handle_vmcall__enable_io_bitmaps(ijson.at("enabled"));
+            ojson = {"success"};
+            return true;
+        }
+
         if (set == "trap_on_io_access")
         {
             handle_vmcall__trap_on_io_access(json_hex_or_dec<port_type>(ijson, "port"));
@@ -126,6 +141,25 @@ exit_handler_intel_x64_eapis::handle_vmcall_json__io_instruction(
     }
 
     return false;
+}
+
+void
+exit_handler_intel_x64_eapis::handle_vmcall__enable_io_bitmaps(
+    bool enabled)
+{
+    if (policy(enable_io_bitmaps)->verify(enabled) != vmcall_verifier::allow)
+        policy(enable_io_bitmaps)->deny_vmcall();
+
+    if (enabled)
+    {
+        eapis_vmcs()->enable_io_bitmaps();
+        bfdebug << "enable_io_bitmaps: success" << bfendl;
+    }
+    else
+    {
+        eapis_vmcs()->disable_io_bitmaps();
+        bfdebug << "disable_io_bitmaps: success" << bfendl;
+    }
 }
 
 void
