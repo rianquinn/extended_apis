@@ -338,7 +338,7 @@ public:
     ///
     void clear() noexcept;
 
-private:
+protected:
 
     pointer m_epte;
 
