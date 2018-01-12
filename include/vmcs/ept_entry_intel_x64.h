@@ -96,6 +96,7 @@ public:
     using pointer = uintptr_t *;
     using integer_pointer = uintptr_t;
     using memory_type_type = uint64_t;
+    using epte_value = uint64_t;
 
     /// Default Constructor
     ///
@@ -112,6 +113,38 @@ public:
     /// @ensures none
     ///
     ~ept_entry_intel_x64() = default;
+
+    /// EPTE pointer
+    ///
+    /// @expects none
+    /// @ensures none
+    ///
+    pointer epte() const noexcept;
+
+    /// Set EPTE pointer
+    ///
+    /// @expects none
+    /// @ensures none
+    ///
+    /// @param val the pointer to replace m_epte with
+    ///
+    void set_epte(pointer val) noexcept;
+
+    /// EPTE value
+    ///
+    /// @expects none
+    /// @ensures none
+    ///
+    epte_value epte_val() const noexcept;
+
+    /// Set EPTE pointer
+    ///
+    /// @expects none
+    /// @ensures none
+    ///
+    /// @param val the value to write to EPTE pointer
+    ///
+    void set_epte_val(epte_value val) noexcept;
 
     /// Read Access
     ///
