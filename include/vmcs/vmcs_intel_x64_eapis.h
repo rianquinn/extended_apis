@@ -27,11 +27,11 @@
 #include <vector>
 #include <memory>
 
-#include <vmcs/vmcs_intel_x64.h>
+#include <hve/arch/intel_x64/vmcs/vmcs.h>
 
-#include <intrinsics/x64.h>
-#include <intrinsics/msrs_x64.h>
-#include <intrinsics/portio_x64.h>
+#include <arch/x64/misc.h>
+#include <arch/x64/msrs.h>
+#include <arch/x64/portio.h>
 
 /// WARNING:
 ///
@@ -712,10 +712,10 @@ public:
     ///
     void disable_cr8_store_hook();
 
-protected:
+public:
 
-    void write_fields(gsl::not_null<vmcs_intel_x64_state *> host_state,
-                      gsl::not_null<vmcs_intel_x64_state *> guest_state) override;
+    virtual void write_fields(gsl::not_null<vmcs_intel_x64_state *> host_state,
+                              gsl::not_null<vmcs_intel_x64_state *> guest_state);
 
 protected:
 

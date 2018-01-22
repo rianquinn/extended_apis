@@ -27,7 +27,7 @@
 #include <vector>
 #include <memory>
 
-#include <memory.h>
+#include <bfmemory.h>
 #include <vmcs/ept_entry_intel_x64.h>
 
 class ept_intel_x64

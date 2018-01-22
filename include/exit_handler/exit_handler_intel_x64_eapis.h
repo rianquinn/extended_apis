@@ -26,18 +26,24 @@
 #include <functional>
 
 #include <vmcs/vmcs_intel_x64_eapis.h>
-#include <vmcs/vmcs_intel_x64_32bit_control_fields.h>
+#include <arch/intel_x64/vmcs/32bit_control_fields.h>
 
-#include <exit_handler/exit_handler_intel_x64.h>
+#include <hve/arch/intel_x64/exit_handler/exit_handler.h>
 #include <exit_handler/exit_handler_intel_x64_eapis_verifiers.h>
 
-#include <debug.h>
-#include <intrinsics/portio_x64.h>
+#include <bfdebug.h>
+#include <arch/x64/portio.h>
 
 #ifdef SHOW_VMCALLS
-#define vmcall_debug bfdebug
+#define vmcall_bfdebug_info(...) bfdebug_info(__VA_ARGS__)
+#define vmcall_bfdebug_nhex(...) bfdebug_nhex(__VA_ARGS__)
+#define vmcall_bfdebug_subnhex(...) bfdebug_subnhex(__VA_ARGS__)
+#define vmcall_bfdebug_bool(...) bfdebug_bool(__VA_ARGS__)
 #else
-#define vmcall_debug if (0) bfdebug
+#define vmcall_bfdebug_info(...)
+#define vmcall_bfdebug_nhex(...)
+#define vmcall_bfdebug_subnhex(...)
+#define vmcall_bfdebug_bool(...)
 #endif
 
 class exit_handler_intel_x64_eapis : public exit_handler_intel_x64
@@ -90,7 +96,7 @@ public:
     /// @expects
     /// @ensures
     ///
-    void resume();
+    void resume() override;
 
     /// Advance and Resume
     ///
@@ -105,7 +111,7 @@ public:
     /// @expects
     /// @ensures
     ///
-    void advance_and_resume();
+    void advance_and_resume() override;
 
     /// Register Monitor Trap
     ///

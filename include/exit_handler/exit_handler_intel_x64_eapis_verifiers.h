@@ -131,6 +131,6 @@ constexpr const auto index_wrmsr_access_log                       = 0x0004009UL;
     this->get_verifier<default_verifier__ ## a>(vp::index_ ## a)
 
 #define deny_vmcall() \
-    deny_vmcall_with_args(__FUNC__, m_denials)
+    deny_vmcall_with_args(__BFFUNC__, m_denials)
 
 #endif
