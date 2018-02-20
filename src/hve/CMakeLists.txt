@@ -21,6 +21,8 @@ if(${BUILD_TARGET_ARCH} STREQUAL "x86_64")
         arch/intel_x64/crs.cpp
         arch/intel_x64/msrs.cpp
         arch/intel_x64/cpuid.cpp
+        arch/intel_x64/irq.cpp
+        arch/intel_x64/irq_window.cpp
     )
 elseif(${BUILD_TARGET_ARCH} STREQUAL "aarch64")
     message(WARNING "Unimplemented")
