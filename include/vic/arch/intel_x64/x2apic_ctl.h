@@ -20,36 +20,13 @@
 #define X2APIC_CTL_INTEL_X64_EAPIS_H
 
 #include <set>
-#include <intrinsics.h>
-#include <vic/arch/intel_x64/lapic_ctl.h>
 
-// -----------------------------------------------------------------------------
-// Exports
-// -----------------------------------------------------------------------------
-
-#include <bfexports.h>
-
-#ifndef STATIC_VIC
-#ifdef SHARED_VIC
-#define EXPORT_VIC EXPORT_SYM
-#else
-#define EXPORT_VIC IMPORT_SYM
-#endif
-#else
-#define EXPORT_VIC
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4251)
-#endif
+#include "lapic_ctl.h"
 
 namespace eapis
 {
 namespace intel_x64
 {
-
-namespace x2apic = ::intel_x64::x2apic;
 
 /// x2APIC subclass of the lapic abstract base class
 ///
@@ -57,13 +34,14 @@ namespace x2apic = ::intel_x64::x2apic;
 /// mode. It is marked final because it is intended to interact
 /// directly with x2apic hardware.
 ///
-struct EXPORT_VIC x2apic_ctl final : public lapic_ctl
+struct EXPORT_EAPIS_VIC x2apic_ctl final : public lapic_ctl
 {
     using gpa_t = lapic_ctl::gpa_t;
     using field_t = lapic_ctl::field_t;
     using value_t = lapic_ctl::value_t;
     using vector_t = lapic_ctl::vector_t;
 
+    /// Check GPA operation
     ///
     /// Check if guest physical address is an APIC register and the desired
     /// read / write operation is allowed.
@@ -78,6 +56,7 @@ struct EXPORT_VIC x2apic_ctl final : public lapic_ctl
     ///
     virtual int check_gpa_op(const gpa_t addr, const reg_op op) noexcept override;
 
+    /// Check MSR operation
     ///
     /// Check if MSR address is an APIC register and the desired read / write
     /// operation is allowed.
@@ -92,8 +71,12 @@ struct EXPORT_VIC x2apic_ctl final : public lapic_ctl
     ///
     virtual int check_msr_op(const field_t msr, const reg_op op) noexcept override;
 
+    /// @cond
+
     virtual value_t read_register(const uint32_t offset) noexcept override;
     virtual void write_register(const uint32_t offset, const value_t val) noexcept override;
+
+    /// @endcond
 
     ///
     /// Register reads
@@ -163,8 +146,8 @@ struct EXPORT_VIC x2apic_ctl final : public lapic_ctl
     ///
     /// @cond
 
-    virtual ~x2apic_ctl() = default;
     x2apic_ctl() = default;
+    virtual ~x2apic_ctl() = default;
     x2apic_ctl(x2apic_ctl &&) = default;
     x2apic_ctl &operator=(x2apic_ctl &&) = default;
 

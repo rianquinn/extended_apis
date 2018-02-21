@@ -16,6 +16,9 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
+#ifndef VCPU_INTEL_X64_EAPIS_H
+#define VCPU_INTEL_X64_EAPIS_H
+
 #include <bfvmm/vcpu/arch/intel_x64/vcpu.h>
 
 #include "../../../hve/arch/intel_x64/cpuid.h"
@@ -24,6 +27,7 @@
 #include "../../../hve/arch/intel_x64/monitor_trap.h"
 #include "../../../hve/arch/intel_x64/msrs.h"
 #include "../../../hve/arch/intel_x64/vpid.h"
+#include "../../../vic/arch/intel_x64/interrupt_manager.h"
 
 namespace eapis
 {
@@ -34,23 +38,12 @@ class vcpu : public bfvmm::intel_x64::vcpu
 {
 public:
 
-    /// Default Constructor
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    vcpu(vcpuid::type id) :
-        bfvmm::intel_x64::vcpu{id}
-    { }
-
     /// Destructor
     ///
     /// @expects
     /// @ensures
     ///
     ~vcpu() = default;
-
-public:
 
     //--------------------------------------------------------------------------
     // CPUID
@@ -145,29 +138,6 @@ public:
     { expects(m_monitor_trap); return m_monitor_trap.get(); }
 
     //--------------------------------------------------------------------------
-    // DRs
-    //--------------------------------------------------------------------------
-
-    /// Enable DR Trapping
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    void enable_dr_trapping()
-    { m_drs = std::make_unique<eapis::intel_x64::drs>(this->exit_handler()); }
-
-    /// Get DR Object
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @return Returns the CR object stored in the vCPU if CR trapping is
-    ///     enabled, otherwise a nullptr is returned.
-    ///
-    auto *drs()
-    { return m_drs.get(); }
-
-    //--------------------------------------------------------------------------
     // MSRs
     //--------------------------------------------------------------------------
 
@@ -213,28 +183,21 @@ public:
     auto *vpid()
     { expects(m_vpid); return m_vpid.get(); }
 
-    //--------------------------------------------------------------------------
-    // CPUID
-    //--------------------------------------------------------------------------
-
-    /// Enable CPUID Trapping
+    /// Default Constructor
     ///
     /// @expects
     /// @ensures
     ///
-    void enable_cpuid_trapping()
-    { m_cpuid = std::make_unique<eapis::intel_x64::cpuid>(this->exit_handler()); }
-
-    /// Get CPUID Object
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @return Returns the CPUID object stored in the vCPU if CPUID trapping is
-    ///     enabled, otherwise a nullptr is returned.
-    ///
-    auto *cpuid()
-    { return m_cpuid.get(); }
+    vcpu(vcpuid::type id) :
+        bfvmm::intel_x64::vcpu{id}
+    {
+        enable_msr_trapping();
+        m_intmgr = std::make_unique<eapis::intel_x64::interrupt_manager>(
+            this->exit_handler(),
+            this->vmcs(),
+            this->msrs()
+        );
+    }
 
 private:
 
@@ -244,7 +207,10 @@ private:
     std::unique_ptr<eapis::intel_x64::monitor_trap> m_monitor_trap;
     std::unique_ptr<eapis::intel_x64::msrs> m_msrs;
     std::unique_ptr<eapis::intel_x64::vpid> m_vpid;
+    std::unique_ptr<eapis::intel_x64::interrupt_manager> m_intmgr;
 };
 
 }
 }
+
+#endif

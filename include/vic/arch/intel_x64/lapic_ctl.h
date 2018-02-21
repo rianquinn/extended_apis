@@ -16,51 +16,27 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef VIC_LAPIC_INTEL_X64_H
-#define VIC_LAPIC_INTEL_X64_H
+#ifndef EAPIS_VIC_LAPIC_INTEL_X64_H
+#define EAPIS_VIC_LAPIC_INTEL_X64_H
 
-// -----------------------------------------------------------------------------
-// Exports
-// -----------------------------------------------------------------------------
-
-#include <bfgsl.h>
-#include <bfexports.h>
-#include <intrinsics.h>
-
-#ifndef STATIC_VIC
-#ifdef SHARED_VIC
-#define EXPORT_VIC EXPORT_SYM
-#else
-#define EXPORT_VIC IMPORT_SYM
-#endif
-#else
-#define EXPORT_VIC
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4251)
-#endif
+#include "base.h"
 
 namespace eapis
 {
 namespace intel_x64
 {
 
-namespace msrs = ::intel_x64::msrs;
-namespace lapic = ::intel_x64::lapic;
-
 /// Local APIC base class
 ///
 /// This abstract class provides an interface to lapic control operations
 /// that are common to both xAPIC and x2APIC modes.
 ///
-struct EXPORT_VIC lapic_ctl
+struct EXPORT_EAPIS_VIC lapic_ctl
 {
     using gpa_t = uintptr_t;
-    using field_t = ::intel_x64::msrs::field_type;
     using value_t = uint64_t;
-    using vector_t = uint64_t;
+    using field_t = ::intel_x64::msrs::field_type;
+    using vector_t = ::intel_x64::msrs::value_type;
 
     enum index : uint32_t { idx0, idx1, idx2, idx3, idx4, idx5, idx6, idx7 };
     enum lvt_reg : uint32_t { cmci, timer, thermal, perf, lint0, lint1, error };
@@ -166,8 +142,8 @@ struct EXPORT_VIC lapic_ctl
     ///
     /// @cond
 
-    virtual ~lapic_ctl() = default;
     lapic_ctl() = default;
+    virtual ~lapic_ctl() = default;
     lapic_ctl(lapic_ctl &&) = default;
     lapic_ctl &operator=(lapic_ctl &&) = default;
 
