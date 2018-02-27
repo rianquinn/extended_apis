@@ -145,6 +145,29 @@ public:
     { expects(m_monitor_trap); return m_monitor_trap.get(); }
 
     //--------------------------------------------------------------------------
+    // DRs
+    //--------------------------------------------------------------------------
+
+    /// Enable DR Trapping
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    void enable_dr_trapping()
+    { m_drs = std::make_unique<eapis::intel_x64::drs>(this->exit_handler()); }
+
+    /// Get DR Object
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return Returns the CR object stored in the vCPU if CR trapping is
+    ///     enabled, otherwise a nullptr is returned.
+    ///
+    auto *drs()
+    { return m_drs.get(); }
+
+    //--------------------------------------------------------------------------
     // MSRs
     //--------------------------------------------------------------------------
 
@@ -189,6 +212,29 @@ public:
     ///
     auto *vpid()
     { expects(m_vpid); return m_vpid.get(); }
+
+    //--------------------------------------------------------------------------
+    // CPUID
+    //--------------------------------------------------------------------------
+
+    /// Enable CPUID Trapping
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    void enable_cpuid_trapping()
+    { m_cpuid = std::make_unique<eapis::intel_x64::cpuid>(this->exit_handler()); }
+
+    /// Get CPUID Object
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return Returns the CPUID object stored in the vCPU if CPUID trapping is
+    ///     enabled, otherwise a nullptr is returned.
+    ///
+    auto *cpuid()
+    { return m_cpuid.get(); }
 
 private:
 
