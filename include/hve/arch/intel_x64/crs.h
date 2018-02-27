@@ -258,7 +258,7 @@ public:
     ///
     void disable_log();
 
-    /// Dump CR0 Log
+    /// Dump Log
     ///
     /// Example:
     /// @code

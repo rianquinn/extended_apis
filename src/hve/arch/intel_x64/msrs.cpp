@@ -53,11 +53,9 @@ msrs::msrs(
 
 msrs::~msrs()
 {
-#ifndef NDEBUG
-    if(m_log_enabled) {
+    if(!ndebug && m_log_enabled) {
         dump_log();
     }
-#endif
 }
 
 // -----------------------------------------------------------------------------
@@ -170,18 +168,12 @@ msrs::dump_log()
         bfdebug_info(0, "msrs log", msg);
         bfdebug_brk2(0, msg);
 
-        bfdebug_info(0, "rdmsr log", msg);
-        for(const auto &msr : m_rdmsr_log) {
-            for(const auto &record : msr.second) {
-                bfdebug_subnhex(0, bfn::to_string(msr.first, 16).c_str(), record, msg);
-            }
-        }
-
-        bfdebug_info(0, "wrmsr log", msg);
-        for(const auto &msr : m_wrmsr_log) {
-            for(const auto &record : msr.second) {
-                bfdebug_subnhex(0, bfn::to_string(msr.first, 16).c_str(), record, msg);
-            }
+        for(const auto &record : m_log) {
+            bfdebug_info(0, "record", msg);
+            bfdebug_subnhex(0, "msr", record.msr, msg);
+            bfdebug_subnhex(0, "val", record.val, msg);
+            bfdebug_subbool(0, "out", record.out, msg);
+            bfdebug_subbool(0, "dir", record.dir, msg);
         }
 
         bfdebug_lnbr(0, msg);
@@ -197,35 +189,38 @@ msrs::dump_log()
 bool
 msrs::handle_rdmsr(gsl::not_null<bfvmm::intel_x64::vmcs *> vmcs)
 {
-    auto msr = gsl::narrow_cast<::x64::msrs::field_type>(
+    const auto &hdlrs = m_rdmsr_handlers.find(
         vmcs->save_state()->rcx
     );
 
-    auto val = emulate_rdmsr(
-        msr
-    );
-
-    const auto &hdlrs = m_rdmsr_handlers.find(
-        msr
-    );
-
-#ifndef NDEBUG
-    if (m_log_enabled) {
-        m_rdmsr_log[msr].push_back(val);
-    }
-#endif
-
     if (GSL_LIKELY(hdlrs != m_rdmsr_handlers.end())) {
 
+        auto val = emulate_rdmsr(
+            gsl::narrow_cast<::x64::msrs::field_type>(vmcs->save_state()->rcx)
+        );
+
         struct info_t info = {
-            msr,
+            vmcs->save_state()->rcx,
             val,
             false,
             false
         };
 
+        if (!ndebug && m_log_enabled) {
+            add_record({
+                info.msr, info.val, false, true
+            });
+        }
+
         for (const auto &d : hdlrs->second) {
             if (d(vmcs, info)) {
+
+                if (!ndebug && m_log_enabled) {
+                    add_record({
+                        info.msr, info.val, true, true
+                    });
+                }
+
                 vmcs->save_state()->rax = ((info.val >> 0x00) & 0x00000000FFFFFFFF);
                 vmcs->save_state()->rdx = ((info.val >> 0x20) & 0x00000000FFFFFFFF);
 
@@ -244,37 +239,42 @@ msrs::handle_rdmsr(gsl::not_null<bfvmm::intel_x64::vmcs *> vmcs)
 bool
 msrs::handle_wrmsr(gsl::not_null<bfvmm::intel_x64::vmcs *> vmcs)
 {
-    auto msr = gsl::narrow_cast<::x64::msrs::field_type>(
+    const auto &hdlrs = m_wrmsr_handlers.find(
         vmcs->save_state()->rcx
     );
 
-    auto val =
-        ((vmcs->save_state()->rax & 0x00000000FFFFFFFF) << 0x00) |
-        ((vmcs->save_state()->rdx & 0x00000000FFFFFFFF) << 0x20);
-
-    const auto &hdlrs = m_wrmsr_handlers.find(
-        msr
-    );
-
-#ifndef NDEBUG
-    if (m_log_enabled) {
-        m_wrmsr_log[msr].push_back(val);
-    }
-#endif
-
     if (GSL_LIKELY(hdlrs != m_wrmsr_handlers.end())) {
 
+        auto val = ((vmcs->save_state()->rax & 0x00000000FFFFFFFF) << 0) |
+                   ((vmcs->save_state()->rdx & 0x00000000FFFFFFFF) << 32);
+
         struct info_t info = {
-            msr,
+            vmcs->save_state()->rcx,
             val,
             false,
             false
         };
 
+        if (!ndebug && m_log_enabled) {
+            add_record({
+                info.msr, info.val, true, false
+            });
+        }
+
         for (const auto &d : hdlrs->second) {
             if (d(vmcs, info)) {
+
+                if (!ndebug && m_log_enabled) {
+                    add_record({
+                        info.msr, info.val, false, false
+                    });
+                }
+
                 if (!info.ignore_write) {
-                    emulate_wrmsr(msr, info.val);
+                    emulate_wrmsr(
+                        gsl::narrow_cast<::x64::msrs::field_type>(info.msr),
+                        info.val
+                    );
                 }
 
                 if (!info.ignore_advance) {

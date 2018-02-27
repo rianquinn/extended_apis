@@ -27,6 +27,10 @@
 #include <bfvmm/hve/arch/intel_x64/vmcs/vmcs.h>
 #include <bfvmm/hve/arch/intel_x64/exit_handler/exit_handler.h>
 
+#ifndef MSRS_LOG_MAX
+#define MSRS_LOG_MAX 10
+#endif
+
 // -----------------------------------------------------------------------------
 // Exports
 // -----------------------------------------------------------------------------
@@ -64,10 +68,10 @@ public:
     using msr_t = ::intel_x64::vmcs::value_type;
 
     struct info_t {
-        ::x64::msrs::field_type msr;    // In
-        ::x64::msrs::value_type val;    // In / Out
-        bool ignore_write;              // Out
-        bool ignore_advance;            // Out
+        uint64_t msr;           // In
+        uint64_t val;           // In / Out
+        bool ignore_write;      // Out
+        bool ignore_advance;    // Out
     };
 
     using rdmsr_handler_delegate_t =
@@ -279,7 +283,7 @@ public:
     ///
     void disable_log();
 
-    /// Dump  Log
+    /// Dump Log
     ///
     /// Example:
     /// @code
@@ -311,11 +315,24 @@ private:
     std::unordered_map<msr_t, std::list<rdmsr_handler_delegate_t>> m_rdmsr_handlers;
     std::unordered_map<msr_t, std::list<wrmsr_handler_delegate_t>> m_wrmsr_handlers;
 
-#ifndef NDEBUG
+private:
+
+    struct msr_record_t {
+        uint64_t msr;
+        uint64_t val;
+        bool out;
+        bool dir;
+    };
+
     bool m_log_enabled{false};
-    std::unordered_map<msr_t, std::list<uint64_t>> m_rdmsr_log;
-    std::unordered_map<msr_t, std::list<uint64_t>> m_wrmsr_log;
-#endif
+    std::list<msr_record_t> m_log;
+
+    void add_record(const msr_record_t &record)
+    {
+        if (m_log.size() < MSRS_LOG_MAX) {
+                m_log.push_back(record);
+        }
+    }
 
 public:
 
