@@ -67,43 +67,24 @@ cpuid::disable_log()
 void
 cpuid::dump_log()
 {
-    // bfdebug_transaction(0, [&](std::string * msg) {
-    //     bfdebug_lnbr(0, msg);
-    //     bfdebug_info(0, "cpuid log", msg);
-    //     bfdebug_brk2(0, msg);
+    bfdebug_transaction(0, [&](std::string * msg) {
+        bfdebug_lnbr(0, msg);
+        bfdebug_info(0, "cpuid log", msg);
+        bfdebug_brk2(0, msg);
 
-    //     bfdebug_info(0, "wrcr0 log", msg);
-    //     for(const auto &val : m_wrcr0_log) {
-    //         bfdebug_subnhex(0, "value", val, msg);
-    //     }
+        for(const auto &record : m_log) {
+            bfdebug_info(0, "record", msg);
+            bfdebug_subnhex(0, "leaf", record.leaf, msg);
+            bfdebug_subnhex(0, "subleaf", record.subleaf, msg);
+            bfdebug_subnhex(0, "rax", record.rax, msg);
+            bfdebug_subnhex(0, "rbx", record.rbx, msg);
+            bfdebug_subnhex(0, "rcx", record.rcx, msg);
+            bfdebug_subnhex(0, "rdx", record.rdx, msg);
+            bfdebug_subbool(0, "out", record.out, msg);
+        }
 
-    //     bfdebug_info(0, "rdcr3 log", msg);
-    //     for(const auto &val : m_rdcr3_log) {
-    //         bfdebug_subnhex(0, "value", val, msg);
-    //     }
-
-    //     bfdebug_info(0, "wrcr3 log", msg);
-    //     for(const auto &val : m_wrcr3_log) {
-    //         bfdebug_subnhex(0, "value", val, msg);
-    //     }
-
-    //     bfdebug_info(0, "wrcr4 log", msg);
-    //     for(const auto &val : m_wrcr4_log) {
-    //         bfdebug_subnhex(0, "value", val, msg);
-    //     }
-
-    //     bfdebug_info(0, "rdcr8 log", msg);
-    //     for(const auto &val : m_rdcr8_log) {
-    //         bfdebug_subnhex(0, "value", val, msg);
-    //     }
-
-    //     bfdebug_info(0, "wrcr8 log", msg);
-    //     for(const auto &val : m_wrcr8_log) {
-    //         bfdebug_subnhex(0, "value", val, msg);
-    //     }
-
-    //     bfdebug_lnbr(0, msg);
-    // });
+        bfdebug_lnbr(0, msg);
+    });
 }
 
 #endif
@@ -138,33 +119,29 @@ cpuid::handle_cpuid(gsl::not_null<bfvmm::intel_x64::vmcs *> vmcs)
         };
 
         if (!ndebug && m_log_enabled) {
-            m_log.push_back({
-                info.rax,
-                info.rbx,
-                info.rcx,
-                info.rdx,
-                false
+            add_record({
+                vmcs->save_state()->rax,
+                vmcs->save_state()->rcx,
+                info.rax, info.rbx, info.rcx, info.rdx, false
             });
         }
 
         for (const auto &d : hdlrs->second) {
             if (d(vmcs, info)) {
 
-                if (!info.ignore_write) {
-                    set_bits(vmcs->save_state()->rax, 0x00000000FFFFFFFF, info.rax);
-                    set_bits(vmcs->save_state()->rbx, 0x00000000FFFFFFFF, info.rbx);
-                    set_bits(vmcs->save_state()->rcx, 0x00000000FFFFFFFF, info.rcx);
-                    set_bits(vmcs->save_state()->rdx, 0x00000000FFFFFFFF, info.rdx);
+                if (!ndebug && m_log_enabled) {
+                    add_record({
+                        vmcs->save_state()->rax,
+                        vmcs->save_state()->rcx,
+                        info.rax, info.rbx, info.rcx, info.rdx, true
+                    });
+                }
 
-                    if (!ndebug && m_log_enabled) {
-                        m_log.push_back({
-                            info.rax,
-                            info.rbx,
-                            info.rcx,
-                            info.rdx,
-                            true
-                        });
-                    }
+                if (!info.ignore_write) {
+                    vmcs->save_state()->rax = set_bits(vmcs->save_state()->rax, 0x00000000FFFFFFFF, info.rax);
+                    vmcs->save_state()->rbx = set_bits(vmcs->save_state()->rbx, 0x00000000FFFFFFFF, info.rbx);
+                    vmcs->save_state()->rcx = set_bits(vmcs->save_state()->rcx, 0x00000000FFFFFFFF, info.rcx);
+                    vmcs->save_state()->rdx = set_bits(vmcs->save_state()->rdx, 0x00000000FFFFFFFF, info.rdx);
                 }
 
                 if(!info.ignore_advance) {

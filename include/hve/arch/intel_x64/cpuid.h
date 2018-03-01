@@ -28,6 +28,10 @@
 #include <bfvmm/hve/arch/intel_x64/vmcs/vmcs.h>
 #include <bfvmm/hve/arch/intel_x64/exit_handler/exit_handler.h>
 
+#ifndef CPUID_LOG_MAX
+#define CPUID_LOG_MAX 10
+#endif
+
 // -----------------------------------------------------------------------------
 // Exports
 // -----------------------------------------------------------------------------
@@ -169,6 +173,8 @@ private:
 private:
 
     struct cpuid_record_t {
+        uint64_t leaf;
+        uint64_t subleaf;
         uint64_t rax;
         uint64_t rbx;
         uint64_t rcx;
@@ -178,6 +184,13 @@ private:
 
     bool m_log_enabled{false};
     std::list<cpuid_record_t> m_log;
+
+    void add_record(const cpuid_record_t &record)
+    {
+        if (m_log.size() < CPUID_LOG_MAX) {
+            m_log.push_back(record);
+        }
+    }
 
 public:
 

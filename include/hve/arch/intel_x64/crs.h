@@ -27,6 +27,10 @@
 #include <bfvmm/hve/arch/intel_x64/vmcs/vmcs.h>
 #include <bfvmm/hve/arch/intel_x64/exit_handler/exit_handler.h>
 
+#ifndef CRS_LOG_MAX
+#define CRS_LOG_MAX 10
+#endif
+
 // -----------------------------------------------------------------------------
 // Exports
 // -----------------------------------------------------------------------------
@@ -65,8 +69,10 @@ public:
     using shadow_t = ::intel_x64::vmcs::value_type;
 
     struct info_t {
-        uint64_t val;     // In / Out
-        uint64_t shadow;  // Out
+        uint64_t val;           // In / Out
+        uint64_t shadow;        // Out
+        bool ignore_write;      // Out
+        bool ignore_advance;    // Out
     };
 
     using wrcr0_handler_delegate_t =
@@ -309,15 +315,27 @@ private:
     std::list<rdcr8_handler_delegate_t> m_rdcr8_handlers;
     std::list<wrcr8_handler_delegate_t> m_wrcr8_handlers;
 
-#ifndef NDEBUG
+private:
+
+    struct cr_record_t {
+        uint64_t val;
+        uint64_t shadow;
+        bool out;           // True == out
+        bool dir;           // True == read
+    };
+
     bool m_log_enabled{false};
-    std::list<::intel_x64::cr0::value_type> m_wrcr0_log;
-    std::list<::intel_x64::cr3::value_type> m_rdcr3_log;
-    std::list<::intel_x64::cr3::value_type> m_wrcr3_log;
-    std::list<::intel_x64::cr4::value_type> m_wrcr4_log;
-    std::list<::intel_x64::cr8::value_type> m_rdcr8_log;
-    std::list<::intel_x64::cr8::value_type> m_wrcr8_log;
-#endif
+    std::list<cr_record_t> m_cr0_log;
+    std::list<cr_record_t> m_cr3_log;
+    std::list<cr_record_t> m_cr4_log;
+    std::list<cr_record_t> m_cr8_log;
+
+    void add_record(std::list<cr_record_t> &log, const cr_record_t &record)
+    {
+        if (log.size() < CRS_LOG_MAX) {
+                log.push_back(record);
+        }
+    }
 
 public:
 

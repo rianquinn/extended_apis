@@ -320,8 +320,8 @@ private:
     struct msr_record_t {
         uint64_t msr;
         uint64_t val;
-        bool out;
-        bool dir;
+        bool out;           // True == out
+        bool dir;           // True == read
     };
 
     bool m_log_enabled{false};
@@ -330,7 +330,7 @@ private:
     void add_record(const msr_record_t &record)
     {
         if (m_log.size() < MSRS_LOG_MAX) {
-                m_log.push_back(record);
+            m_log.push_back(record);
         }
     }
 

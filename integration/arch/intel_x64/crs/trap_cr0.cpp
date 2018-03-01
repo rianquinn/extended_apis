@@ -56,6 +56,10 @@ public:
     {
         enable_cr_trapping();
 
+        if (!ndebug) {
+            crs()->enable_log();
+        }
+
         crs()->enable_wrcr0_trapping(
             0xFFFFFFFFFFFFFFFF,
             ::intel_x64::vmcs::guest_cr0::get()

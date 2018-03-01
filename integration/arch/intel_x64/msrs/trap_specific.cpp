@@ -51,9 +51,9 @@ public:
     {
         enable_msr_trapping();
 
-#ifndef NDEBUG
-        msrs()->enable_log();
-#endif
+        if (!ndebug) {
+            msrs()->enable_log();
+        }
 
         msrs()->pass_through_all_rdmsr_accesses();
         msrs()->pass_through_all_wrmsr_accesses();

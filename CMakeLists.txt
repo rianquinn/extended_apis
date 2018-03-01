@@ -39,6 +39,12 @@ if(ENABLE_BUILD_VMM)
         DEPENDS eapis
         SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/integration/arch/intel_x64/msrs/
     )
+
+    vmm_extension(
+        eapis_integration_intel_x64_cpuid
+        DEPENDS eapis
+        SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/integration/arch/intel_x64/cpuid/
+    )
 endif()
 
 # if(ENABLE_BUILD_TEST)

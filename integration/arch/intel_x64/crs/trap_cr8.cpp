@@ -42,6 +42,10 @@ public:
     {
         enable_cr_trapping();
 
+        if (!ndebug) {
+            crs()->enable_log();
+        }
+
         crs()->enable_rdcr8_trapping();
         crs()->enable_wrcr8_trapping();
 

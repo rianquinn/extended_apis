@@ -20,6 +20,7 @@
 
 #include "../../../hve/arch/intel_x64/crs.h"
 #include "../../../hve/arch/intel_x64/msrs.h"
+#include "../../../hve/arch/intel_x64/cpuid.h"
 
 namespace eapis
 {
@@ -94,10 +95,34 @@ public:
     auto *msrs()
     { return m_msrs.get(); }
 
+    //--------------------------------------------------------------------------
+    // CPUID
+    //--------------------------------------------------------------------------
+
+    /// Enable CPUID Trapping
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    void enable_cpuid_trapping()
+    { m_cpuid = std::make_unique<eapis::intel_x64::cpuid>(this->exit_handler()); }
+
+    /// Get CPUID Object
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return Returns the CPUID object stored in the vCPU if CPUID trapping is
+    ///     enabled, otherwise a nullptr is returned.
+    ///
+    auto *cpuid()
+    { return m_cpuid.get(); }
+
 private:
 
     std::unique_ptr<eapis::intel_x64::crs> m_crs;
     std::unique_ptr<eapis::intel_x64::msrs> m_msrs;
+    std::unique_ptr<eapis::intel_x64::cpuid> m_cpuid;
 };
 
 }

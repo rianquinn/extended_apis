@@ -51,6 +51,10 @@ public:
     {
         enable_cr_trapping();
 
+        if (!ndebug) {
+            crs()->enable_log();
+        }
+
         crs()->enable_rdcr3_trapping();
         crs()->enable_wrcr3_trapping();
 
