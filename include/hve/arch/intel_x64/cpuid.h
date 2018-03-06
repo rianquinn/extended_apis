@@ -73,6 +73,21 @@ public:
     ///
     ~cpuid() final;
 
+    ///
+    /// Reason
+    ///
+    /// Example:
+    /// @code
+    /// this->reason();
+    /// @endcode
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return the basic exit reason handled by this handler
+    ///
+    reason_t reason();
+
 public:
 
     /// Add CPUID Handler

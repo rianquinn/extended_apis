@@ -79,6 +79,8 @@ class EXPORT_EAPIS_HVE base
 
 public:
 
+    using reason_t = vmcs_n::value_type;
+
     /// Default Constructor
     ///
     /// @expects
@@ -92,6 +94,41 @@ public:
     /// @ensures
     ///
     virtual ~base() = default;
+
+    /// Reason
+    ///
+    /// Example:
+    /// @code
+    /// this->reason();
+    /// @endcode
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return the basic exit reason handled by this handler
+    ///
+    virtual reason_t reason() = 0;
+
+    /// Cast handler
+    ///
+    /// Example:
+    /// @code
+    /// this->cast_handler();
+    /// @endcode
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    template<typename D> D*
+    cast_handler(gsl::not_null<base *> ptr)
+    {
+        auto ret = dynamic_cast<D *>(ptr);
+
+        if (!ret) {
+            bferror_text(0, "Invalid handler type: ", typeid(ptr).name());
+            throw std::bad_cast();
+        }
+    }
 
 public:
 

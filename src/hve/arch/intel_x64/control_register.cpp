@@ -73,6 +73,10 @@ control_register::~control_register()
     }
 }
 
+control_register::reason_t
+control_register::reason()
+{ return vmcs_n::exit_reason::basic_exit_reason::control_register_accesses; }
+
 // -----------------------------------------------------------------------------
 // CR0
 // -----------------------------------------------------------------------------

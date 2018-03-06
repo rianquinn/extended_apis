@@ -30,7 +30,6 @@ vpid::vpid()
     m_id = s_id++;
 
     vmcs_n::virtual_processor_identifier::set(m_id);
-    vmcs_n::secondary_processor_based_vm_execution_controls::enable_vpid::enable();
 }
 
 }
