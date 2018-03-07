@@ -58,7 +58,7 @@ if(ENABLE_BUILD_VMM)
         SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/integration/arch/intel_x64/rdmsr/
     )
 
-    vmm_extension(
+vmm_extension(
         eapis_integration_intel_x64_vpid
         DEPENDS eapis
         SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/integration/arch/intel_x64/vpid/

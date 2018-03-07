@@ -48,7 +48,7 @@ public:
     /// @expects
     /// @ensures
     ///
-    mov_dr(gsl::not_null<exit_handler_t *> exit_handler);
+    mov_dr(gsl::not_null<eapis::intel_x64::vcpu *> vcpu);
 
     /// Destructor
     ///

@@ -46,7 +46,7 @@ public:
     /// @expects
     /// @ensures
     ///
-    monitor_trap(gsl::not_null<exit_handler_t *> exit_handler);
+    monitor_trap(gsl::not_null<eapis::intel_x64::vcpu *> vcpu);
 
     /// Destructor
     ///

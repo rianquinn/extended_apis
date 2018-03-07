@@ -1,6 +1,6 @@
 #
 # Bareflank Hypervisor
-# Copyright (C) 2015 Assured Information Security, Inc.
+# Copyright (C) 2018 Assured Information Security, Inc.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -16,15 +16,9 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-cmake_minimum_required(VERSION 3.6)
-project(eapis_main C CXX)
-
-include(${SOURCE_CMAKE_DIR}/project.cmake)
-init_project()
-
 if(${BUILD_TARGET_ARCH} STREQUAL "x86_64")
     list(APPEND SOURCES
-        arch/intel_x64/vcpu_factory.cpp
+        arch/intel_x64/vcpu.cpp
     )
 elseif(${BUILD_TARGET_ARCH} STREQUAL "aarch64")
     message(WARNING "Unimplemented")
@@ -32,9 +26,20 @@ else()
     message(FATAL_ERROR "Unsupported archiecture")
 endif()
 
-add_vmm_executable(
-    eapis_vmm
+add_shared_library(
+    eapis_vcpu
     SOURCES ${SOURCES}
-    LIBRARIES eapis_vcpu
-    LIBRARIES eapis_hve
+    DEFINES SHARED_EAPIS_HVE
+    DEFINES SHARED_HVE
+    DEFINES SHARED_MEMORY_MANAGER
+    DEFINES SHARED_INTRINSICS
+)
+
+add_static_library(
+    eapis_vcpu
+    SOURCES ${SOURCES}
+    DEFINES STATIC_EAPIS_HVE
+    DEFINES STATIC_HVE
+    DEFINES STATIC_MEMORY_MANAGER
+    DEFINES STATIC_INTRINSICS
 )
