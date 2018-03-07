@@ -55,6 +55,21 @@ public:
     ///
     ~monitor_trap() final = default;
 
+    ///
+    /// Reason
+    ///
+    /// Example:
+    /// @code
+    /// this->reason();
+    /// @endcode
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return the basic exit reason handled by this handler
+    ///
+    reason_t reason();
+
 public:
 
     /// Add Monitor Trap Handler

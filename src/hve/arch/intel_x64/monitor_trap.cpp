@@ -44,6 +44,10 @@ monitor_trap::monitor_trap(gsl::not_null<exit_handler_t *> exit_handler) :
     );
 }
 
+monitor_trap::reason_t
+monitor_trap::reason()
+{ return vmcs_n::exit_reason::basic_exit_reason::monitor_trap_flag; }
+
 // -----------------------------------------------------------------------------
 // Monitor Trap
 // -----------------------------------------------------------------------------

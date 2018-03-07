@@ -30,7 +30,7 @@ namespace eapis
 namespace intel_x64
 {
 
-class EXPORT_EAPIS_HVE vpid : public base
+class EXPORT_EAPIS_HVE vpid
 {
 public:
 
@@ -48,7 +48,7 @@ public:
     /// @expects
     /// @ensures
     ///
-    ~vpid() final = default;
+    ~vpid() = default;
 
     /// Get ID
     ///
@@ -60,20 +60,13 @@ public:
     vmcs_n::value_type id() const noexcept
     { return m_id; }
 
-public:
-
-    /// Dump Log
-    ///
-    /// Example:
-    /// @code
-    /// this->dump_log();
-    /// @endcode
+    /// Enable
     ///
     /// @expects
     /// @ensures
     ///
-    void dump_log() final
-    { }
+    void enable()
+    { vmcs_n::secondary_processor_based_vm_execution_controls::enable_vpid::enable(); }
 
 private:
 
