@@ -46,7 +46,7 @@ public:
     /// @expects
     /// @ensures
     ///
-    monitor_trap(gsl::not_null<exit_handler_t *> exit_handler);
+    monitor_trap(gsl::not_null<eapis::intel_x64::vcpu *> vcpu);
 
     /// Destructor
     ///
@@ -54,21 +54,6 @@ public:
     /// @ensures
     ///
     ~monitor_trap() final = default;
-
-    ///
-    /// Reason
-    ///
-    /// Example:
-    /// @code
-    /// this->reason();
-    /// @endcode
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @return the basic exit reason handled by this handler
-    ///
-    reason_t reason();
 
 public:
 

@@ -30,6 +30,8 @@ namespace eapis
 namespace intel_x64
 {
 
+class vcpu;
+
 class EXPORT_EAPIS_HVE control_register : public base
 {
 public:
@@ -49,7 +51,7 @@ public:
     /// @expects
     /// @ensures
     ///
-    control_register(gsl::not_null<exit_handler_t *> exit_handler);
+    control_register(gsl::not_null<eapis::intel_x64::vcpu *> vcpu);
 
     /// Destructor
     ///
@@ -57,21 +59,6 @@ public:
     /// @ensures
     ///
     ~control_register() final;
-
-    ///
-    /// Reason
-    ///
-    /// Example:
-    /// @code
-    /// this->reason();
-    /// @endcode
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @return the basic exit reason handled by this handler
-    ///
-    reason_t reason();
 
 public:
 

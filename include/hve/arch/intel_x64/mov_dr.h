@@ -48,7 +48,7 @@ public:
     /// @expects
     /// @ensures
     ///
-    mov_dr(gsl::not_null<exit_handler_t *> exit_handler);
+    mov_dr(gsl::not_null<eapis::intel_x64::vcpu *> vcpu);
 
     /// Destructor
     ///
@@ -56,21 +56,6 @@ public:
     /// @ensures
     ///
     ~mov_dr() final;
-
-    ///
-    /// Reason
-    ///
-    /// Example:
-    /// @code
-    /// this->reason();
-    /// @endcode
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @return the basic exit reason handled by this handler
-    ///
-    reason_t reason();
 
 public:
 

@@ -30,6 +30,8 @@ namespace eapis
 namespace intel_x64
 {
 
+class vcpu;
+
 class EXPORT_EAPIS_HVE wrmsr : public base
 {
 public:
@@ -49,10 +51,7 @@ public:
     /// @expects
     /// @ensures
     ///
-    wrmsr(
-        gsl::not_null<uint8_t *> msr_bitmap,
-        gsl::not_null<exit_handler_t *> exit_handler
-    );
+    wrmsr(gsl::not_null<eapis::intel_x64::vcpu *> vcpu);
 
     /// Destructor
     ///
@@ -60,21 +59,6 @@ public:
     /// @ensures
     ///
     ~wrmsr() final;
-
-    ///
-    /// Reason
-    ///
-    /// Example:
-    /// @code
-    /// this->reason();
-    /// @endcode
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @return the basic exit reason handled by this handler
-    ///
-    reason_t reason();
 
 public:
 
