@@ -40,7 +40,7 @@ mov_dr::mov_dr(gsl::not_null<exit_handler_t *> exit_handler) :
 
 mov_dr::~mov_dr()
 {
-    if(!ndebug && m_log_enabled) {
+    if (!ndebug && m_log_enabled) {
         dump_log();
     }
 }
@@ -65,7 +65,7 @@ mov_dr::dump_log()
         bfdebug_info(0, "dr7 log", msg);
         bfdebug_brk2(0, msg);
 
-        for(const auto &record : m_log) {
+        for (const auto &record : m_log) {
             bfdebug_info(0, "record", msg);
             bfdebug_subnhex(0, "val", record.val, msg);
         }
@@ -96,7 +96,7 @@ mov_dr::handle(gsl::not_null<vmcs_t *> vmcs)
     for (const auto &d : m_handlers) {
         if (d(vmcs, info)) {
 
-            if(!info.ignore_write) {
+            if (!info.ignore_write) {
                 vmcs_n::guest_dr7::set(info.val & 0x00000000FFFFFFFF);
             }
 
