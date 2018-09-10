@@ -19,7 +19,7 @@
 #include <bfdebug.h>
 
 #include <intrinsics.h>
-#include <hve/arch/intel_x64/misc/mtrrs.h>
+#include <hve/arch/intel_x64/mtrrs.h>
 
 namespace eapis
 {

@@ -96,8 +96,11 @@ public:
     /// @ensures
     ///
     /// @param apis the apis object for this rdmsr handler
+    /// @param trap_all_accesses trap on all accesses if enabled, pass through
+    ///     all accesses if disabled
     ///
-    rdmsr_handler(gsl::not_null<apis *> apis);
+    rdmsr_handler(
+        gsl::not_null<apis *> apis, bool trap_all_accesses);
 
     /// Destructor
     ///

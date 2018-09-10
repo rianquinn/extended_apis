@@ -19,45 +19,27 @@
 #include <bfdebug.h>
 #include <hve/arch/intel_x64/apis.h>
 
-#include <bfcallonce.h>
-
 namespace eapis
 {
 namespace intel_x64
 {
 
-bfn::once_flag g_flag;
-uint64_t g_ia32_vmx_cr0_fixed0{};
-uint64_t g_ia32_vmx_cr4_fixed0{};
-
 static bool
 default_wrcr0_handler(
     gsl::not_null<vmcs_t *> vmcs, control_register_handler::info_t &info)
 {
-    using namespace vmcs_n::guest_ia32_efer;
-    using namespace vmcs_n::vm_entry_controls;
-
     bfignored(vmcs);
 
-    info.shadow = info.val;
-    info.val |= g_ia32_vmx_cr0_fixed0;
-
-    if (lme::is_enabled()) {
+    if (vmcs_n::guest_ia32_efer::lme::is_enabled()) {
         if (vmcs_n::guest_cr0::paging::is_enabled(info.val)) {
-            lma::enable();
-            ia_32e_mode_guest::enable();
+            vmcs_n::guest_ia32_efer::lma::enable();
+            vmcs_n::vm_entry_controls::ia_32e_mode_guest::enable();
         }
         else {
-            lma::disable();
-            ia_32e_mode_guest::disable();
+            vmcs_n::guest_ia32_efer::lma::disable();
+            vmcs_n::vm_entry_controls::ia_32e_mode_guest::disable();
         }
     }
-
-    bfdebug_transaction(0, [&](std::string * msg) {
-        bfdebug_info(0, "default_wrcr0_handler", msg);
-        bfdebug_subnhex(0, "val", info.val, msg);
-        bfdebug_subnhex(0, "shadow", info.shadow, msg);
-    });
 
     return true;
 }
@@ -89,20 +71,14 @@ default_wrcr4_handler(
     bfignored(vmcs);
     bfignored(info);
 
-    info.shadow = info.val;
-    info.val |= g_ia32_vmx_cr4_fixed0;
-
-    bfdebug_transaction(0, [&](std::string * msg) {
-        bfdebug_info(0, "default_wrcr4_handler", msg);
-        bfdebug_subnhex(0, "val", info.val, msg);
-        bfdebug_subnhex(0, "shadow", info.shadow, msg);
-    });
-
     return true;
 }
 
 control_register_handler::control_register_handler(
-    gsl::not_null<apis *> apis)
+    gsl::not_null<apis *> apis
+) :
+    m_ia32_vmx_cr0_fixed0{apis->ia32_vmx_cr0_fixed0()},
+    m_ia32_vmx_cr4_fixed0{apis->ia32_vmx_cr4_fixed0()}
 {
     using namespace vmcs_n;
 
@@ -126,23 +102,6 @@ control_register_handler::control_register_handler(
     this->add_wrcr4_handler(
         handler_delegate_t::create<default_wrcr4_handler>()
     );
-
-    bfn::call_once(g_flag, [&] {
-
-        g_ia32_vmx_cr0_fixed0 = ::intel_x64::msrs::ia32_vmx_cr0_fixed0::get();
-        g_ia32_vmx_cr4_fixed0 = ::intel_x64::msrs::ia32_vmx_cr4_fixed0::get();
-
-        // QUIRK
-        //
-        // CR0 fixed0 might report PG/PE as having to being fixed to 1, when in
-        // fact, they can be 0 if unrestricted guest support is enabled. To
-        // address this issue, we patch fixed0 to allow PG/PE which is needed
-        // for the transition from 64bit to 32bit. Note that we only support
-        // CPUs that have EPT and Unrestricted Mode.
-        //
-        g_ia32_vmx_cr0_fixed0 &= ~::intel_x64::cr0::paging::mask;
-        g_ia32_vmx_cr0_fixed0 &= ~::intel_x64::cr0::protection_enable::mask;
-    });
 }
 
 control_register_handler::~control_register_handler()
@@ -384,11 +343,15 @@ control_register_handler::handle_wrcr0(gsl::not_null<vmcs_t *> vmcs)
         });
     }
 
+    info.shadow = info.val;
+
     for (const auto &d : m_wrcr0_handlers) {
         if (d(vmcs, info)) {
             break;
         }
     }
+
+    info.val |= m_ia32_vmx_cr0_fixed0;
 
     if (!info.ignore_write) {
         vmcs_n::guest_cr0::set(info.val);
@@ -484,11 +447,15 @@ control_register_handler::handle_wrcr4(gsl::not_null<vmcs_t *> vmcs)
         });
     }
 
+    info.shadow = info.val;
+
     for (const auto &d : m_wrcr4_handlers) {
         if (d(vmcs, info)) {
             break;
         }
     }
+
+    info.val |= m_ia32_vmx_cr4_fixed0;
 
     if (!info.ignore_write) {
         vmcs_n::guest_cr4::set(info.val);

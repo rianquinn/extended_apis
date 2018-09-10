@@ -16,37 +16,66 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
+#include <bfcallonce.h>
+
 #include <bfvmm/vcpu/vcpu_factory.h>
 #include <eapis/hve/arch/intel_x64/vcpu.h>
+
+using namespace eapis::intel_x64;
+
+// -----------------------------------------------------------------------------
+// vCPU
+// -----------------------------------------------------------------------------
 
 namespace test
 {
 
+bfn::once_flag flag;
+ept::mmap g_guest_map;
+
+void
+test_hlt_delegate(bfobject *obj)
+{
+    bfignored(obj);
+}
+
 class vcpu : public eapis::intel_x64::vcpu
 {
 public:
-
-    /// Constructor
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @param hve the address of the hve for this vic
-    ///
-    explicit vcpu(vcpuid::type id) : eapis::intel_x64::vcpu{id}
+    explicit vcpu(vcpuid::type id) :
+        eapis::intel_x64::vcpu{id}
     {
-        const auto phys_svr = vic()->m_phys_x2apic->read_svr();
-        const auto piv = ::intel_x64::lapic::svr::vector::get(phys_svr);
-        const auto viv = vic()->phys_to_virt(piv);
+        bfn::call_once(flag, [&] {
+            ept::identity_map(
+                g_guest_map,
+                MAX_PHYS_ADDR,
+                ept::mmap::attr_type::read_write
+            );
+        });
 
-        vic()->m_virt_x2apic->inject_spurious(viv);
+        this->add_hlt_delegate(
+            hlt_delegate_t::create<test_hlt_delegate>()
+        );
+
+        eapis()->add_ept_execute_violation_handler(
+            ept_violation_handler::handler_delegate_t::create<vcpu, &vcpu::test_execute_violation_handler>(this)
+        );
+
+        eapis()->set_eptp(g_guest_map);
     }
 
-    ~vcpu() override = default;
-    vcpu(vcpu &&) = delete;
-    vcpu &operator=(vcpu &&) = delete;
-    vcpu(const vcpu &) = delete;
-    vcpu &operator=(const vcpu &) = delete;
+    bool
+    test_execute_violation_handler(
+        gsl::not_null<vmcs_t *> vmcs, ept_violation_handler::info_t &info)
+    {
+        bfignored(vmcs);
+        bfignored(info);
+
+        bfdebug_pass(0, "test");
+        eapis()->disable_ept();
+
+        return true;
+    }
 };
 
 }

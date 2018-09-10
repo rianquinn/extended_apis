@@ -16,13 +16,10 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef EAPIS_EPT_HANDLER_INTEL_X64_H
-#define EAPIS_EPT_HANDLER_INTEL_X64_H
+#ifndef VPID_INTEL_X64_EAPIS_H
+#define VPID_INTEL_X64_EAPIS_H
 
-#include "ept/mmap.h"
-#include "ept/helpers.h"
-
-#include "../base.h"
+#include "base.h"
 
 // -----------------------------------------------------------------------------
 // Definitions
@@ -33,14 +30,12 @@ namespace eapis
 namespace intel_x64
 {
 
-/// EPT
+/// VPID
 ///
-/// Provides an interface for enabling EPT
+/// Provides an interface for enabling VPID
 ///
-class EXPORT_EAPIS_HVE ept_handler
+class EXPORT_EAPIS_HVE vpid_handler
 {
-    bool m_enabled{false};
-
 public:
 
     /// Constructor
@@ -48,34 +43,51 @@ public:
     /// @expects
     /// @ensures
     ///
-    ept_handler();
+    vpid_handler();
 
     /// Destructor
     ///
     /// @expects
     /// @ensures
     ///
-    ~ept_handler() = default;
+    ~vpid_handler() = default;
 
-    /// Set EPTP
+    /// Get ID
     ///
     /// @expects
     /// @ensures
     ///
-    /// @param map A pointer to the map to set EPTP to. If the pointer is
-    ///     a nullptr, EPT is disabled.
+    /// @return Returns the VPID
     ///
-    void set_eptp(ept::mmap *map);
+    vmcs_n::value_type id() const noexcept;
+
+    /// Enable
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    void enable();
+
+    /// Disable
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    void disable();
+
+private:
+
+    vmcs_n::value_type m_id;
 
 public:
 
     /// @cond
 
-    ept_handler(ept_handler &&) = default;
-    ept_handler &operator=(ept_handler &&) = default;
+    vpid_handler(vpid_handler &&) = default;
+    vpid_handler &operator=(vpid_handler &&) = default;
 
-    ept_handler(const ept_handler &) = delete;
-    ept_handler &operator=(const ept_handler &) = delete;
+    vpid_handler(const vpid_handler &) = delete;
+    vpid_handler &operator=(const vpid_handler &) = delete;
 
     /// @endcond
 };

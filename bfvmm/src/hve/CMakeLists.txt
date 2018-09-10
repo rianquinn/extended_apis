@@ -18,9 +18,6 @@
 
 if(${BUILD_TARGET_ARCH} STREQUAL "x86_64")
     list(APPEND SOURCES
-        arch/intel_x64/misc/ept.cpp
-        arch/intel_x64/misc/mtrrs.cpp
-        arch/intel_x64/misc/vpid.cpp
         arch/intel_x64/vmexit/control_register.cpp
         arch/intel_x64/vmexit/cpuid.cpp
         arch/intel_x64/vmexit/ept_misconfiguration.cpp
@@ -34,6 +31,11 @@ if(${BUILD_TARGET_ARCH} STREQUAL "x86_64")
         arch/intel_x64/vmexit/rdmsr.cpp
         arch/intel_x64/vmexit/sipi_signal.cpp
         arch/intel_x64/vmexit/wrmsr.cpp
+        arch/intel_x64/vmexit/xsetbv.cpp
+        arch/intel_x64/ept.cpp
+        arch/intel_x64/microcode.cpp
+        arch/intel_x64/mtrrs.cpp
+        arch/intel_x64/vpid.cpp
         arch/intel_x64/apis.cpp
     )
 

@@ -43,7 +43,7 @@ public:
     ///
     /// Info
     ///
-    /// This struct is created by control_register::handle before being
+    /// This struct is created by handle() before being
     /// passed to each registered handler.
     ///
     struct info_t {

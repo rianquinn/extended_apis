@@ -24,6 +24,23 @@ namespace eapis
 namespace intel_x64
 {
 
+bool
+handle_cpuid_feature_information(
+    gsl::not_null<vmcs_t *> vmcs, cpuid_handler::info_t &info)
+{
+    bfignored(vmcs);
+
+    // Currently, we do not support nested virtualization. As a result,
+    // the EAPIs adds a default handler to disable support for VMXE here.
+    //
+
+    info.rcx = clear_bit(
+        info.rcx, ::intel_x64::cpuid::feature_information::ecx::vmx::from
+    );
+
+    return true;
+}
+
 cpuid_handler::cpuid_handler(
     gsl::not_null<apis *> apis)
 {
@@ -32,6 +49,11 @@ cpuid_handler::cpuid_handler(
     apis->add_handler(
         exit_reason::basic_exit_reason::cpuid,
         ::handler_delegate_t::create<cpuid_handler, &cpuid_handler::handle>(this)
+    );
+
+    this->add_handler(
+        ::intel_x64::cpuid::feature_information::addr,
+        handler_delegate_t::create<handle_cpuid_feature_information>()
     );
 }
 

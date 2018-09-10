@@ -262,6 +262,9 @@ private:
     std::list<handler_delegate_t> m_wrcr3_handlers;
     std::list<handler_delegate_t> m_wrcr4_handlers;
 
+    uint64_t m_ia32_vmx_cr0_fixed0{};
+    uint64_t m_ia32_vmx_cr4_fixed0{};
+
 private:
 
     struct record_t {

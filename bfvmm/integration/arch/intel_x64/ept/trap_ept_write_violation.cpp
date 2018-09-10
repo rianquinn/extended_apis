@@ -33,6 +33,15 @@ namespace test
 bfn::once_flag flag;
 ept::mmap g_guest_map;
 
+alignas(0x200000) std::array<uint8_t, 0x200000> buffer;
+
+void
+test_hlt_delegate(bfobject *obj)
+{
+    bfignored(obj);
+    buffer.at(0) = 42;
+}
+
 class vcpu : public eapis::intel_x64::vcpu
 {
 public:
@@ -46,77 +55,38 @@ public:
             );
         });
 
-        eapis()->enable_vpid();
+        this->add_hlt_delegate(
+            hlt_delegate_t::create<test_hlt_delegate>()
+        );
+
+        eapis()->add_ept_write_violation_handler(
+            ept_violation_handler::handler_delegate_t::create<vcpu, &vcpu::test_write_violation_handler>(this)
+        );
+
+        auto &pte =
+            g_guest_map.entry(
+                g_mm->virtptr_to_physint(buffer.data())
+            );
+
+        ::intel_x64::ept::pd::entry::read_access::disable(pte);
+        ::intel_x64::ept::pd::entry::write_access::disable(pte);
+        ::intel_x64::ept::pd::entry::execute_access::disable(pte);
+
         eapis()->set_eptp(g_guest_map);
-
-        eapis()->enable_wrcr0_exiting(
-            0xFFFFFFFFFFFFFFFF, ::intel_x64::vmcs::guest_cr0::get()
-        );
-
-        eapis()->enable_wrcr4_exiting(
-            0xFFFFFFFFFFFFFFFF, ::intel_x64::vmcs::guest_cr4::get()
-        );
-
-        eapis()->add_handler(
-            vmcs_n::exit_reason::basic_exit_reason::xsetbv,
-            ::handler_delegate_t::create<vcpu, &vcpu::handle_xsetbv>(this)
-        );
-
-        eapis()->wrmsr()->trap_on_all_accesses();
-        eapis()->rdmsr()->trap_on_all_accesses();
-
-        eapis()->rdmsr()->pass_through_access(0x0000000000000017);
-        eapis()->rdmsr()->pass_through_access(0x0000000000000079);
-        eapis()->rdmsr()->pass_through_access(0x000000000000008b);
-
-        eapis()->wrmsr()->pass_through_access(0x0000000000000017);
-        eapis()->wrmsr()->pass_through_access(0x0000000000000079);
-        eapis()->wrmsr()->pass_through_access(0x000000000000008b);
     }
 
     bool
-    handle_xsetbv(
-        gsl::not_null<vmcs_t *> vmcs)
+    test_write_violation_handler(
+        gsl::not_null<vmcs_t *> vmcs, ept_violation_handler::info_t &info)
     {
-        auto val = 0ULL;
-
-        val |= ((vmcs->save_state()->rax & 0x00000000FFFFFFFF) << 0x00);
-        val |= ((vmcs->save_state()->rdx & 0x00000000FFFFFFFF) << 0x20);
-
-        _xsetbv(val);
-
-        return advance(vmcs);
-    }
-
-    bool
-    wrmsr_handle_efer(
-        gsl::not_null<vmcs_t *> vmcs, wrmsr_handler::info_t &info)
-    {
-        using namespace vmcs_n::guest_ia32_efer;
-
         bfignored(vmcs);
+        bfignored(info);
 
-        if (vmcs_n::guest_cr0::paging::is_disabled()) {
-            lma::disable(info.val);
-        }
-        else {
-            lma::enable(info.val);
-        }
-
-        m_ia32_efer_shadow = info.val;
-
-        bfdebug_transaction(0, [&](std::string * msg) {
-            bfdebug_info(0, "wrmsr_handle_efer", msg);
-            bfdebug_subnhex(0, "val", info.val, msg);
-            bfdebug_subnhex(0, "shadow", m_ia32_efer_shadow, msg);
-        });
+        bfdebug_info(0, "disabling EPT");
+        eapis()->disable_ept();
 
         return true;
     }
-
-private:
-
-    uint64_t m_ia32_efer_shadow{};
 };
 
 }

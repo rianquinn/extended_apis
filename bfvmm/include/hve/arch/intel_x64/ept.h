@@ -16,10 +16,13 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef VPID_INTEL_X64_EAPIS_H
-#define VPID_INTEL_X64_EAPIS_H
+#ifndef EAPIS_EPT_HANDLER_INTEL_X64_H
+#define EAPIS_EPT_HANDLER_INTEL_X64_H
 
-#include "../base.h"
+#include "base.h"
+
+#include "ept/mmap.h"
+#include "ept/helpers.h"
 
 // -----------------------------------------------------------------------------
 // Definitions
@@ -30,12 +33,14 @@ namespace eapis
 namespace intel_x64
 {
 
-/// VPID
+/// EPT
 ///
-/// Provides an interface for enabling VPID
+/// Provides an interface for enabling EPT
 ///
-class EXPORT_EAPIS_HVE vpid_handler
+class EXPORT_EAPIS_HVE ept_handler
 {
+    bool m_enabled{false};
+
 public:
 
     /// Constructor
@@ -43,51 +48,34 @@ public:
     /// @expects
     /// @ensures
     ///
-    vpid_handler();
+    ept_handler();
 
     /// Destructor
     ///
     /// @expects
     /// @ensures
     ///
-    ~vpid_handler() = default;
+    ~ept_handler() = default;
 
-    /// Get ID
+    /// Set EPTP
     ///
     /// @expects
     /// @ensures
     ///
-    /// @return Returns the VPID
+    /// @param map A pointer to the map to set EPTP to. If the pointer is
+    ///     a nullptr, EPT is disabled.
     ///
-    vmcs_n::value_type id() const noexcept;
-
-    /// Enable
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    void enable();
-
-    /// Disable
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    void disable();
-
-private:
-
-    vmcs_n::value_type m_id;
+    void set_eptp(ept::mmap *map);
 
 public:
 
     /// @cond
 
-    vpid_handler(vpid_handler &&) = default;
-    vpid_handler &operator=(vpid_handler &&) = default;
+    ept_handler(ept_handler &&) = default;
+    ept_handler &operator=(ept_handler &&) = default;
 
-    vpid_handler(const vpid_handler &) = delete;
-    vpid_handler &operator=(const vpid_handler &) = delete;
+    ept_handler(const ept_handler &) = delete;
+    ept_handler &operator=(const ept_handler &) = delete;
 
     /// @endcond
 };

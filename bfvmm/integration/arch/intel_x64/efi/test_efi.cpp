@@ -16,49 +16,54 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#include <bfdebug.h>
-#include <hve/arch/intel_x64/apis.h>
+#include <bfcallonce.h>
 
-namespace eapis
-{
-namespace intel_x64
+#include <bfvmm/vcpu/vcpu_factory.h>
+#include <eapis/hve/arch/intel_x64/vcpu.h>
+
+using namespace eapis::intel_x64;
+
+// -----------------------------------------------------------------------------
+// vCPU
+// -----------------------------------------------------------------------------
+
+namespace test
 {
 
-init_signal_handler::init_signal_handler(
-    gsl::not_null<apis *> apis)
-{
-    using namespace vmcs_n;
+bfn::once_flag flag;
+ept::mmap g_guest_map;
 
-    apis->add_handler(
-        exit_reason::basic_exit_reason::init_signal,
-        ::handler_delegate_t::create<init_signal_handler, &init_signal_handler::handle>(this)
-    );
+class vcpu : public eapis::intel_x64::vcpu
+{
+public:
+    explicit vcpu(vcpuid::type id) :
+        eapis::intel_x64::vcpu{id}
+    {
+        bfn::call_once(flag, [&] {
+            ept::identity_map(
+                g_guest_map,
+                MAX_PHYS_ADDR
+            );
+        });
+
+        eapis()->enable_efi(g_guest_map);
+    }
+};
+
 }
 
 // -----------------------------------------------------------------------------
-// Handlers
+// vCPU Factory
 // -----------------------------------------------------------------------------
 
-bool
-init_signal_handler::handle(gsl::not_null<vmcs_t *> vmcs)
+namespace bfvmm
 {
-    bfignored(vmcs);
 
-    // Note:
-    //
-    // For the actual INIT logic, please see our SIPI handler, as that
-    // is where we actually init the CPU. DO NOT put any code in this
-    // handler other than changing the CPU's activite state. Too
-    // much code, including debug statements, will exacerbate the
-    // race between INIT - SIPI - SIPI.
-    //
-
-    vmcs_n::guest_activity_state::set(
-        vmcs_n::guest_activity_state::wait_for_sipi
-    );
-
-    return true;
+std::unique_ptr<vcpu>
+vcpu_factory::make_vcpu(vcpuid::type vcpuid, bfobject *obj)
+{
+    bfignored(obj);
+    return std::make_unique<test::vcpu>(vcpuid);
 }
 
-}
 }

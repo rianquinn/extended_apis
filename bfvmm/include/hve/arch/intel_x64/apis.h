@@ -32,9 +32,11 @@
 #include "vmexit/rdmsr.h"
 #include "vmexit/sipi_signal.h"
 #include "vmexit/wrmsr.h"
+#include "vmexit/xsetbv.h"
 
-#include "misc/ept.h"
-#include "misc/vpid.h"
+#include "ept.h"
+#include "microcode.h"
+#include "vpid.h"
 
 #include <bfvmm/hve/arch/intel_x64/vcpu/vcpu.h>
 
@@ -85,6 +87,47 @@ public:
     //==========================================================================
     // MISC
     //==========================================================================
+
+    //--------------------------------------------------------------------------
+    // EFI
+    //--------------------------------------------------------------------------
+
+    /// Enable EFI (Beta)
+    ///
+    /// Enables support for EFI. To provide generic support, this function
+    /// performs the following:
+    /// - Enables trapping on CR0 and CR4 for fixed bits. Specifically this is
+    ///   done to ensure fixed bits are always set, and attempts to flip the
+    ///   PG flag are properly handled.
+    /// - Enables VPID. Why not. You can always turn it off later.
+    /// - Enables pass-through for all MSRs (reading and writing). MSRs can
+    ///   be trapped as needed by policy. We generically disable MSR trapping
+    ///   to prevent unsupported MSR accesses from throwing a GP in the
+    ///   hypervisor when the GP is intended for the OS, which happens on
+    ///   both Windows and Linux.
+    ///
+    /// TODO
+    /// - This code also disables microcode updates. At some point, we should
+    ///   instead emulate microcode updates, or provide the user with the
+    ///   ability to load their own microcode and disable the guest from
+    ///   doing this.
+    ///
+    /// NOTES:
+    /// - If you run into problems, be careful about adding debug messages
+    ///   to the hypervisor. Specifically, make sure that you don't add
+    ///   debug messages that print during the INIT - SIPI - SIPI process,
+    ///   otherwise, you could end up generating a problem, hiding the
+    ///   actual issue. The INIT - SIPI - SIPI process is really fragle,
+    ///   and relies on hard coded delays dictated by Intel.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param map The map to set EPTP to. Specifically, unstrestricted guest
+    ///     support is required, which means EPT is required, so to enable
+    ///     EFI, you must provide an EPT map.
+    ///
+    VIRTUAL void enable_efi(ept::mmap &map);
 
     //--------------------------------------------------------------------------
     // EPT
@@ -512,6 +555,13 @@ public:
     ///
     gsl::not_null<rdmsr_handler *> rdmsr();
 
+    /// Trap All Read MSR Accesses
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    VIRTUAL void trap_all_rdmsr_handler_accesses();
+
     /// Pass Through All Read MSR Accesses
     ///
     /// @expects
@@ -544,6 +594,13 @@ public:
     ///
     gsl::not_null<wrmsr_handler *> wrmsr();
 
+    /// Trap All Write MSR Accesses
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    VIRTUAL void trap_all_wrmsr_handler_accesses();
+
     /// Pass Through All Write MSR Accesses
     ///
     /// @expects
@@ -561,6 +618,30 @@ public:
     ///
     VIRTUAL void add_wrmsr_handler(
         vmcs_n::value_type msr, const wrmsr_handler::handler_delegate_t &d);
+
+    //--------------------------------------------------------------------------
+    // XSetBV
+    //--------------------------------------------------------------------------
+
+    /// Get XSetBV Object
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return Returns the XSetBV handler stored in the apis if XSetBV
+    ///     trapping is enabled, otherwise an exception is thrown
+    ///
+    gsl::not_null<xsetbv_handler *> xsetbv();
+
+    /// Add XSetBV Handler
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param d the delegate to call when a xsetbv exit occurs
+    ///
+    VIRTUAL void add_xsetbv_handler(
+        const xsetbv_handler::handler_delegate_t &d);
 
     //==========================================================================
     // Bitmaps
@@ -610,6 +691,28 @@ public:
         ::intel_x64::vmcs::value_type reason,
         const handler_delegate_t &d);
 
+    /// CR0 Fixed Fields
+    ///
+    /// @expects none
+    /// @ensures none
+    ///
+    /// @return returns a 1 for each bit that must be a 1 in CR0 at all times
+    ///    while virtualization is enabled.
+    ///
+    VIRTUAL uint64_t ia32_vmx_cr0_fixed0()
+    { return m_ia32_vmx_cr0_fixed0; }
+
+    /// CR4 Fixed Fields
+    ///
+    /// @expects none
+    /// @ensures none
+    ///
+    /// @return returns a 1 for each bit that must be a 1 in CR4 at all times
+    ///    while virtualization is enabled.
+    ///
+    VIRTUAL uint64_t ia32_vmx_cr4_fixed0()
+    { return m_ia32_vmx_cr4_fixed0; }
+
 private:
 
     void check_crall();
@@ -618,10 +721,16 @@ private:
     void check_io_bitmaps();
     void check_monitor_trap_handler();
     void check_msr_bitmap();
-    void check_rdmsr_handler();
-    void check_wrmsr_handler();
+    void check_rdmsr_handler(bool trap_all_accesses = true);
+    void check_wrmsr_handler(bool trap_all_accesses = true);
 
 private:
+
+    bfvmm::intel_x64::vmcs *m_vmcs;
+    bfvmm::intel_x64::exit_handler *m_exit_handler;
+
+    uint64_t m_ia32_vmx_cr0_fixed0{};
+    uint64_t m_ia32_vmx_cr4_fixed0{};
 
     bool m_is_rdcr3_enabled{false};
     bool m_is_wrcr3_enabled{false};
@@ -630,6 +739,7 @@ private:
     std::unique_ptr<uint8_t[]> m_io_bitmaps;
 
     std::unique_ptr<ept_handler> m_ept_handler;
+    std::unique_ptr<microcode_handler> m_microcode_handler;
     std::unique_ptr<vpid_handler> m_vpid_handler;
 
     std::unique_ptr<control_register_handler> m_control_register_handler;
@@ -645,9 +755,7 @@ private:
     std::unique_ptr<rdmsr_handler> m_rdmsr_handler;
     std::unique_ptr<sipi_signal_handler> m_sipi_signal_handler;
     std::unique_ptr<wrmsr_handler> m_wrmsr_handler;
-
-    bfvmm::intel_x64::vmcs *m_vmcs;
-    bfvmm::intel_x64::exit_handler *m_exit_handler;
+    std::unique_ptr<xsetbv_handler> m_xsetbv_handler;
 };
 
 }

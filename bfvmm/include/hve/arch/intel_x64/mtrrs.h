@@ -19,7 +19,7 @@
 #ifndef PHYS_MTRR_INTEL_X64_EAPIS_H
 #define PHYS_MTRR_INTEL_X64_EAPIS_H
 
-#include "../base.h"
+#include "base.h"
 #include "ept/mmap.h"
 
 namespace eapis

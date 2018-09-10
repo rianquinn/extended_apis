@@ -97,8 +97,11 @@ public:
     /// @ensures
     ///
     /// @param apis the apis pointer for this wrmsr handler
+    /// @param trap_all_accesses trap on all accesses if enabled, pass through
+    ///     all accesses if disabled
     ///
-    wrmsr_handler(gsl::not_null<apis *> apis);
+    wrmsr_handler(
+        gsl::not_null<apis *> apis, bool trap_all_accesses);
 
     /// Destructor
     ///

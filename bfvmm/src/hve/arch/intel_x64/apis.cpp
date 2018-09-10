@@ -23,47 +23,62 @@ namespace eapis
 namespace intel_x64
 {
 
+// QUIRK
+//
+// CR0 fixed0 might report PG/PE as having to being fixed to 1, when in
+// fact, they can be 0 if unrestricted guest support is enabled. To
+// address this issue, we patch fixed0 to allow PG/PE which is needed
+// for the transition from 64bit to 32bit. Note that we only support
+// CPUs that have EPT and Unrestricted Mode.
+//
 apis::apis(
     gsl::not_null<bfvmm::intel_x64::vmcs *> vmcs,
     gsl::not_null<bfvmm::intel_x64::exit_handler *> exit_handler
 ) :
     m_vmcs{vmcs},
-    m_exit_handler{exit_handler}
+    m_exit_handler{exit_handler},
+    m_ia32_vmx_cr0_fixed0{::intel_x64::msrs::ia32_vmx_cr0_fixed0::get()},
+    m_ia32_vmx_cr4_fixed0{::intel_x64::msrs::ia32_vmx_cr4_fixed0::get()}
 {
-    m_init_signal_handler = std::make_unique<init_signal_handler>(this);
-    m_sipi_signal_handler = std::make_unique<sipi_signal_handler>(this);
+    using namespace vmcs_n::secondary_processor_based_vm_execution_controls;
+    unrestricted_guest::enable();
 
+    m_ia32_vmx_cr0_fixed0 &= ~::intel_x64::cr0::paging::mask;
+    m_ia32_vmx_cr0_fixed0 &= ~::intel_x64::cr0::protection_enable::mask;
 
-
-
-
-
-
-check_msr_bitmap();
-
-
-
-    m_rdmsr_handler = std::make_unique<rdmsr_handler>(this);
-    m_wrmsr_handler = std::make_unique<wrmsr_handler>(this);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    m_cpuid_handler = std::make_unique<cpuid_handler>(this);
+    m_xsetbv_handler = std::make_unique<xsetbv_handler>(this);
 }
 
 //==========================================================================
 // MISC
 //==========================================================================
+
+//--------------------------------------------------------------------------
+// EFI
+//--------------------------------------------------------------------------
+
+void
+apis::enable_efi(ept::mmap &map)
+{
+    this->enable_vpid();
+    this->set_eptp(map);
+
+    this->enable_wrcr0_exiting(
+        m_ia32_vmx_cr0_fixed0, ::intel_x64::vmcs::guest_cr0::get()
+    );
+
+    this->enable_wrcr4_exiting(
+        m_ia32_vmx_cr4_fixed0, ::intel_x64::vmcs::guest_cr4::get()
+    );
+
+    this->pass_through_all_rdmsr_handler_accesses();
+    this->pass_through_all_wrmsr_handler_accesses();
+
+    m_microcode_handler = std::make_unique<microcode_handler>(this);
+    m_init_signal_handler = std::make_unique<init_signal_handler>(this);
+    m_sipi_signal_handler = std::make_unique<sipi_signal_handler>(this);
+}
 
 //--------------------------------------------------------------------------
 // EPT
@@ -189,11 +204,7 @@ void
 apis::add_cpuid_handler(
     cpuid_handler::leaf_t leaf, const cpuid_handler::handler_delegate_t &d)
 {
-    if (!m_cpuid_handler) {
-        m_cpuid_handler = std::make_unique<cpuid_handler>(this);
-    }
-
-    m_cpuid_handler->add_handler(leaf, d);
+    m_cpuid_handler->add_handler(leaf, std::move(d));
 }
 
 //--------------------------------------------------------------------------
@@ -423,15 +434,21 @@ apis::rdmsr()
 { return m_rdmsr_handler.get(); }
 
 void
-apis::pass_through_all_rdmsr_handler_accesses()
+apis::trap_all_rdmsr_handler_accesses()
 { check_rdmsr_handler(); }
+
+void
+apis::pass_through_all_rdmsr_handler_accesses()
+{ check_rdmsr_handler(false); }
 
 void
 apis::add_rdmsr_handler(
     vmcs_n::value_type msr, const rdmsr_handler::handler_delegate_t &d)
 {
     check_rdmsr_handler();
-    m_rdmsr_handler->add_handler(msr, d);
+
+    m_rdmsr_handler->trap_on_access(msr);
+    m_rdmsr_handler->add_handler(msr, std::move(d));
 }
 
 //--------------------------------------------------------------------------
@@ -443,15 +460,36 @@ apis::wrmsr()
 { return m_wrmsr_handler.get(); }
 
 void
-apis::pass_through_all_wrmsr_handler_accesses()
+apis::trap_all_wrmsr_handler_accesses()
 { check_wrmsr_handler(); }
+
+void
+apis::pass_through_all_wrmsr_handler_accesses()
+{ check_wrmsr_handler(false); }
 
 void
 apis::add_wrmsr_handler(
     vmcs_n::value_type msr, const wrmsr_handler::handler_delegate_t &d)
 {
     check_wrmsr_handler();
-    m_wrmsr_handler->add_handler(msr, d);
+
+    m_wrmsr_handler->trap_on_access(msr);
+    m_wrmsr_handler->add_handler(msr, std::move(d));
+}
+
+//--------------------------------------------------------------------------
+// XSetBV
+//----------------------------------------------------------------- ---------
+
+gsl::not_null<xsetbv_handler *>
+apis::xsetbv()
+{ return m_xsetbv_handler.get(); }
+
+void
+apis::add_xsetbv_handler(
+    const xsetbv_handler::handler_delegate_t &d)
+{
+    m_xsetbv_handler->add_handler(std::move(d));
 }
 
 //==========================================================================
@@ -539,22 +577,24 @@ apis::check_msr_bitmap()
 }
 
 void
-apis::check_rdmsr_handler()
+apis::check_rdmsr_handler(bool trap_all_accesses)
 {
     check_msr_bitmap();
 
     if (!m_rdmsr_handler) {
-        m_rdmsr_handler = std::make_unique<rdmsr_handler>(this);
+        m_rdmsr_handler =
+            std::make_unique<rdmsr_handler>(this, trap_all_accesses);
     }
 }
 
 void
-apis::check_wrmsr_handler()
+apis::check_wrmsr_handler(bool trap_all_accesses)
 {
     check_msr_bitmap();
 
     if (!m_wrmsr_handler) {
-        m_wrmsr_handler = std::make_unique<wrmsr_handler>(this);
+        m_wrmsr_handler =
+            std::make_unique<wrmsr_handler>(this, trap_all_accesses);
     }
 }
 

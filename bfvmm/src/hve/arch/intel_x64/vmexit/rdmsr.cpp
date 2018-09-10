@@ -25,7 +25,7 @@ namespace intel_x64
 {
 
 rdmsr_handler::rdmsr_handler(
-    gsl::not_null<apis *> apis
+    gsl::not_null<apis *> apis, bool trap_all_accesses
 ) :
     m_msr_bitmap{apis->msr_bitmap()}
 {
@@ -36,7 +36,9 @@ rdmsr_handler::rdmsr_handler(
         ::handler_delegate_t::create<rdmsr_handler, &rdmsr_handler::handle>(this)
     );
 
-    this->trap_on_all_accesses();
+    if (trap_all_accesses) {
+        this->trap_on_all_accesses();
+    }
 }
 
 rdmsr_handler::~rdmsr_handler()

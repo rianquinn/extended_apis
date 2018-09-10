@@ -79,6 +79,11 @@ public:
 
     /// @endcond
 
+private:
+
+    uint64_t m_ia32_vmx_cr0_fixed0{};
+    uint64_t m_ia32_vmx_cr4_fixed0{};
+
 public:
 
     /// @cond
@@ -90,8 +95,6 @@ public:
     sipi_signal_handler &operator=(const sipi_signal_handler &) = delete;
 
     /// @endcond
-
-bool first{true};
 };
 
 }

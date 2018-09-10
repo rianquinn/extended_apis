@@ -1,6 +1,6 @@
 #
-# Bareflank Hypervisor
-# Copyright (C) 2015 Assured Information Security, Inc.
+# Bareflank Extended APIs
+# Copyright (C) 2018 Assured Information Security, Inc.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -17,6 +17,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 eapis_add_vmm_executable(
-    eapis_integration_intel_x64_vic_injection
-    SOURCES test_injection.cpp
+    eapis_integration_intel_x64_efi_test_efi
+    SOURCES test_efi.cpp
+)
+
+eapis_add_vmm_executable(
+    eapis_integration_intel_x64_efi_test_efi_with_interrupts
+    SOURCES test_efi_with_interrupts.cpp
 )
