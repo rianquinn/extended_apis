@@ -51,19 +51,16 @@ public:
             );
         });
 
-        eapis()->add_external_interrupt_handler(
-            external_interrupt_handler::handler_delegate_t::create<vcpu, &vcpu::test_external_interrupt_handler>(this)
-        );
-
-        eapis()->add_interrupt_window_handler(
-            interrupt_window_handler::handler_delegate_t::create<vcpu, &vcpu::test_interrupt_window_handler>(this)
+        eapis()->add_wrmsr_handler(
+            ::intel_x64::msrs::ia32_apic_base::addr,
+            wrmsr_handler::handler_delegate_t::create<vcpu, &vcpu::ia32_apic_base__wrmsr_handler>(this)
         );
 
         eapis()->enable_efi(g_guest_map);
     }
 
     bool
-    test_external_interrupt_handler(
+    external_interrupt_handler(
         gsl::not_null<vmcs_t *> vmcs, external_interrupt_handler::info_t &info)
     {
         bfignored(vmcs);
@@ -80,7 +77,7 @@ public:
     }
 
     bool
-    test_interrupt_window_handler(
+    interrupt_window_handler(
         gsl::not_null<vmcs_t *> vmcs, interrupt_window_handler::info_t &info)
     {
         bfignored(vmcs);
@@ -91,6 +88,28 @@ public:
 
         if (!m_vectors.empty()) {
             info.ignore_disable = true;
+        }
+
+        return true;
+    }
+
+    bool
+    ia32_apic_base__wrmsr_handler(
+        gsl::not_null<vmcs_t *> vmcs, wrmsr_handler::info_t &info)
+    {
+        bfignored(vmcs);
+
+        if (::intel_x64::msrs::ia32_apic_base::extd::is_enabled(info.val)) {
+            eapis()->add_external_interrupt_handler(
+                external_interrupt_handler::handler_delegate_t::create<vcpu, &vcpu::external_interrupt_handler>(this)
+            );
+
+            eapis()->add_interrupt_window_handler(
+                interrupt_window_handler::handler_delegate_t::create<vcpu, &vcpu::interrupt_window_handler>(this)
+            );
+        }
+        else {
+            bferror_info(0, "local xAPIC mode is not supported");
         }
 
         return true;

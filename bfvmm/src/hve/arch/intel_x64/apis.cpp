@@ -65,11 +65,13 @@ apis::enable_efi(ept::mmap &map)
     this->set_eptp(map);
 
     this->enable_wrcr0_exiting(
-        m_ia32_vmx_cr0_fixed0, ::intel_x64::vmcs::guest_cr0::get()
+        m_ia32_vmx_cr0_fixed0 | ::intel_x64::cr0::paging::mask,
+        ::intel_x64::vmcs::guest_cr0::get()
     );
 
     this->enable_wrcr4_exiting(
-        m_ia32_vmx_cr4_fixed0, ::intel_x64::vmcs::guest_cr4::get()
+        m_ia32_vmx_cr4_fixed0,
+        ::intel_x64::vmcs::guest_cr4::get()
     );
 
     this->pass_through_all_rdmsr_handler_accesses();
