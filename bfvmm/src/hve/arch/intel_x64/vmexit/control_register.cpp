@@ -30,14 +30,22 @@ default_wrcr0_handler(
 {
     bfignored(vmcs);
 
+    // TODO:
+    //
+    // This code only makes sense when EPT is enabled. Otherwise, we need
+    // to puke on the VM.
+    //
+
     if (vmcs_n::guest_ia32_efer::lme::is_enabled()) {
         if (vmcs_n::guest_cr0::paging::is_enabled(info.val)) {
             vmcs_n::guest_ia32_efer::lma::enable();
             vmcs_n::vm_entry_controls::ia_32e_mode_guest::enable();
+            ::intel_x64::vmx::invept_global();
         }
         else {
             vmcs_n::guest_ia32_efer::lma::disable();
             vmcs_n::vm_entry_controls::ia_32e_mode_guest::disable();
+            ::intel_x64::vmx::invept_global();
         }
     }
 

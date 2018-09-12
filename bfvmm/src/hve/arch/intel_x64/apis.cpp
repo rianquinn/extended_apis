@@ -43,6 +43,11 @@ apis::apis(
     using namespace vmcs_n::secondary_processor_based_vm_execution_controls;
     unrestricted_guest::enable();
 
+    // MOVE ME
+    //
+    // This needs to be moved to the set_eptp() function.
+    //
+
     m_ia32_vmx_cr0_fixed0 &= ~::intel_x64::cr0::paging::mask;
     m_ia32_vmx_cr0_fixed0 &= ~::intel_x64::cr0::protection_enable::mask;
 
