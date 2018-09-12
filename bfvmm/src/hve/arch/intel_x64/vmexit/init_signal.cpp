@@ -33,30 +33,64 @@ init_signal_handler::init_signal_handler(
         exit_reason::basic_exit_reason::init_signal,
         ::handler_delegate_t::create<init_signal_handler, &init_signal_handler::handle>(this)
     );
+
+    apis->add_wrmsr_handler(
+        ::intel_x64::msrs::ia32_x2apic_icr::addr,
+        wrmsr_handler::handler_delegate_t::create<init_signal_handler, &init_signal_handler::handle_icr_write>(this)
+    );
 }
 
 // -----------------------------------------------------------------------------
 // Handlers
 // -----------------------------------------------------------------------------
 
+static bool g_handled = false;
+
+static void
+wait_until_handled() noexcept
+{
+    while (!g_handled) {
+        ::intel_x64::pause();
+    }
+}
+
+bool
+init_signal_handler::handle_icr_write(gsl::not_null<vmcs_t *> vmcs, wrmsr_handler::info_t &info)
+{
+    bfignored(vmcs);
+
+    switch (::intel_x64::lapic::icr::delivery_mode::get(info.val)) {
+        case ::intel_x64::lapic::icr::delivery_mode::init:
+            if (::intel_x64::lapic::icr::level::is_disabled(info.val)) {
+                break;
+            }
+
+            ::intel_x64::msrs::set(::intel_x64::msrs::ia32_x2apic_icr::addr, info.val);
+            wait_until_handled();
+
+            // We set this to false so that the next AP(s) will boot too
+            // This code assumes that APs are brought up sequentially
+            g_handled = false;
+            info.ignore_write = true;
+            break;
+
+        default:
+            break;
+    }
+
+    return true;
+}
+
 bool
 init_signal_handler::handle(gsl::not_null<vmcs_t *> vmcs)
 {
     bfignored(vmcs);
 
-    // Note:
-    //
-    // For the actual INIT logic, please see our SIPI handler, as that
-    // is where we actually init the CPU. DO NOT put any code in this
-    // handler other than changing the CPU's activite state. Too
-    // much code, including debug statements, will exacerbate the
-    // race between INIT - SIPI - SIPI.
-    //
-
     vmcs_n::guest_activity_state::set(
         vmcs_n::guest_activity_state::wait_for_sipi
     );
 
+    g_handled = true;
     return true;
 }
 

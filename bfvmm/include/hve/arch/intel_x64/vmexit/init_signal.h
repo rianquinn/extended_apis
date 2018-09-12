@@ -20,6 +20,7 @@
 #define INIT_SIGNAL_INTEL_X64_EAPIS_H
 
 #include "../base.h"
+#include "wrmsr.h"
 
 // -----------------------------------------------------------------------------
 // Definitions
@@ -76,6 +77,7 @@ public:
     /// @cond
 
     bool handle(gsl::not_null<vmcs_t *> vmcs);
+    bool handle_icr_write(gsl::not_null<vmcs_t *> vmcs, wrmsr_handler::info_t &info);
 
     /// @endcond
 
