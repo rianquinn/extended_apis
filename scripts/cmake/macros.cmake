@@ -23,7 +23,6 @@
 function(eapis_add_vmm_executable NAME)
     list(APPEND ARGN
         LIBRARIES eapis_hve
-        EXT_LIBRARIES Zydis
     )
 
     add_vmm_executable(

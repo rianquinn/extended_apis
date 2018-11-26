@@ -46,17 +46,3 @@ set(EAPIS_SOURCE_BFVMM_DIR ${CMAKE_SOURCE_DIR}/../../../bfvmm
     CACHE INTERNAL
     "bfvmm source dir"
 )
-
-# ------------------------------------------------------------------------------
-# Links
-# ------------------------------------------------------------------------------
-
-set(ZYDIS_URL "https://github.com/Bareflank/zydis/archive/v2.0.2.zip"
-    CACHE INTERNAL FORCE
-    "Zydis URL"
-)
-
-set(ZYDIS_URL_MD5 "2eeac4aa6c12684b579064518347dc95"
-    CACHE INTERNAL FORCE
-    "Zydis URL MD5 hash"
-)
